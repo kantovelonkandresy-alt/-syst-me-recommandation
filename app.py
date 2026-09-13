@@ -375,7 +375,11 @@ if page == "graphe":
         "Survolez un noeud avec la souris pour voir ses détails — "
         "vous pouvez aussi zoomer et déplacer le graphe."
     )
-    st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="background:#F7F5FC; border-radius:18px; padding:1rem; '
+        'border:1px solid rgba(255,255,255,0.09);">',
+        unsafe_allow_html=True,
+    )
     graphe = creer_graphe()
     fig = obtenir_figure_plotly(graphe)
     st.plotly_chart(fig, use_container_width=True)
