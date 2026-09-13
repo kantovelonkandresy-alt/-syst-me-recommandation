@@ -9,14 +9,20 @@ from donnees import obtenir_donnees, obtenir_genres, ajouter_utilisateur
 from graphe import creer_graphe, obtenir_figure_plotly
 from recommandation import SystemeRecommandation
 
+# ------------------------------------------------------------
+# Un seul endroit à modifier pour renommer l'application
+# ------------------------------------------------------------
+APP_NAME = "NOVA RECO"
+APP_ICON = "🧠"
+
 
 # ============================================================
 # CONFIGURATION STREAMLIT
 # ============================================================
 
 st.set_page_config(
-    page_title="NOVA RECO | AI Recommendation",
-    page_icon="🧠",
+    page_title=f"{APP_NAME} | AI Recommendation",
+    page_icon=APP_ICON,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -768,8 +774,11 @@ st.markdown(
 
     /* --------------------------------------------------------
        PROGRESS
+       (deux sélecteurs pour rester compatible avec toutes
+       les versions de Streamlit)
     -------------------------------------------------------- */
 
+    .stProgress > div > div,
     [data-testid="stProgress"] > div > div {
         background:
             linear-gradient(
@@ -778,6 +787,11 @@ st.markdown(
                 #ec4899,
                 #22d3ee
             ) !important;
+    }
+
+    .stProgress > div,
+    [data-testid="stProgress"] > div {
+        background: rgba(255,255,255,0.08) !important;
     }
 
     /* --------------------------------------------------------
@@ -884,7 +898,7 @@ total_connexions = sum(
 # ============================================================
 
 st.markdown(
-    """
+    f"""
     <div class="hero">
         <div class="hero-content">
 
@@ -893,7 +907,7 @@ st.markdown(
             </div>
 
             <div class="hero-title">
-                NOVA RECO
+                {APP_NAME}
             </div>
 
             <div class="hero-subtitle">
@@ -903,7 +917,7 @@ st.markdown(
             </div>
 
             <div class="hero-badge">
-                🧠 PYTHON · NETWORKX · STREAMLIT
+                {APP_ICON} PYTHON · NETWORKX · STREAMLIT
             </div>
 
         </div>
@@ -934,11 +948,11 @@ PAGES = [
 with st.sidebar:
 
     st.markdown(
-        """
+        f"""
         <div class="sidebar-logo">
 
             <div class="sidebar-logo-title">
-                NOVA RECO
+                {APP_NAME}
             </div>
 
             <div class="sidebar-logo-subtitle">
@@ -1142,7 +1156,7 @@ if page == "accueil":
     st.markdown(
         """
         <div class="section-title">
-            Bienvenue dans NOVA RECO
+            Bienvenue
             <div class="section-line"></div>
         </div>
         """,
@@ -1157,7 +1171,7 @@ if page == "accueil":
     with col_left:
 
         st.markdown(
-            """
+            f"""
             <div class="ai-card">
 
                 <div class="ai-label">
@@ -1169,7 +1183,7 @@ if page == "accueil":
                 </div>
 
                 <div class="ai-text">
-                    NOVA RECO analyse les relations entre
+                    {APP_NAME} analyse les relations entre
                     les utilisateurs et les films sous forme
                     de graphe. Le moteur utilise la similarité
                     de Jaccard pour identifier les utilisateurs
@@ -1529,11 +1543,11 @@ elif page == "recommandations":
     )
 
     st.markdown(
-        """
+        f"""
         <div class="ai-card">
 
             <div class="ai-label">
-                ✦ NOVA AI ENGINE
+                ✦ {APP_NAME} AI ENGINE
             </div>
 
             <div class="ai-title">
@@ -1714,7 +1728,7 @@ elif page == "liste":
                 ):
 
                     st.markdown(
-                        f"""
+                        """
                         <div style="
                             color:#64748b;
                             font-size:0.72rem;
@@ -1878,7 +1892,7 @@ elif page == "ajouter":
 # ============================================================
 
 st.markdown(
-    """
+    f"""
     <div class="footer">
 
         <div style="
@@ -1886,7 +1900,7 @@ st.markdown(
             color:#64748b;
             font-weight:700;
         ">
-            NOVA RECO
+            {APP_NAME}
         </div>
 
         <div style="margin-top:0.35rem;">
