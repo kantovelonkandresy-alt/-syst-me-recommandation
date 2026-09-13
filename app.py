@@ -280,7 +280,7 @@ systeme = SystemeRecommandation(donnees, genres)
 st.markdown(
     """
     <div class="hero">
-        <h1>🎬 CinéReco</h1>
+        <h1>🎬 Système de recommandation basé sur un graphe utilisateur-item</h1>
         <p>Système de recommandation basé sur un graphe utilisateur-item —
         similarité de Jaccard + bonus de genre</p>
     </div>
