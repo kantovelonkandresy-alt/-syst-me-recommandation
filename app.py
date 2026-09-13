@@ -1,6 +1,6 @@
 # app.py
-# NOVA RECO - Dashboard IA futuriste pour le système de recommandation
-# utilisateur-item. Thème : panneau de contrôle HUD, fond sombre, accent cyan.
+# NOVA RECO - Thème Cyberpunk AI. Fond sombre, néon magenta/cyan,
+# panneaux à coins coupés (angulaires), scanlines discrètes.
 # Lancer avec : streamlit run app.py
 
 import streamlit as st
@@ -10,148 +10,122 @@ from recommandation import SystemeRecommandation
 
 st.set_page_config(
     page_title="NOVA RECO",
-    page_icon="◆",
+    page_icon="▲",
     layout="wide",
 )
 
 st.markdown(
     """
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <style>
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; color: #cbd5e1; }
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; color: #c9c9d9; }
 
-    /* Fond : bleu-nuit profond + grille discrète (thème panneau de contrôle) */
+    /* Fond sombre + scanlines discrètes + lueur magenta/cyan aux coins */
     .stApp {
-        background-color: #060a14;
+        background-color: #0a0510;
         background-image:
-            linear-gradient(rgba(34,211,238,0.055) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34,211,238,0.055) 1px, transparent 1px),
-            radial-gradient(ellipse at top left, rgba(34,211,238,0.10) 0%, transparent 55%),
-            radial-gradient(ellipse at bottom right, rgba(6,182,212,0.08) 0%, transparent 55%);
-        background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
+            repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 3px),
+            radial-gradient(ellipse at top left, rgba(255,0,153,0.14) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom right, rgba(0,230,255,0.12) 0%, transparent 50%);
     }
 
     section[data-testid="stSidebar"] {
-        background: rgba(8, 13, 24, 0.85);
-        border-right: 1px solid rgba(34,211,238,0.25);
+        background: rgba(10, 5, 16, 0.9);
+        border-right: 1px solid rgba(255,0,153,0.3);
     }
-    section[data-testid="stSidebar"] * { color: #94a3b8 !important; }
+    section[data-testid="stSidebar"] * { color: #a99bb5 !important; }
 
-    /* Panneau HUD : coins marqués, bordure fine cyan */
+    /* Panneaux angulaires (coins coupés), pas de border-radius */
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        position: relative;
-        background: rgba(11, 18, 32, 0.75);
-        border-radius: 4px;
-        border: 1px solid rgba(34, 211, 238, 0.25);
-        box-shadow: 0 0 0 1px rgba(34,211,238,0.04), 0 8px 30px rgba(0,0,0,0.4);
-        padding: 0.5rem 1.2rem 1rem 1.2rem;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"]::before,
-    div[data-testid="stVerticalBlockBorderWrapper"]::after {
-        content: "";
-        position: absolute;
-        width: 14px;
-        height: 14px;
-        border-color: #22d3ee;
-        border-style: solid;
-        opacity: 0.9;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"]::before {
-        top: -1px; left: -1px;
-        border-width: 2px 0 0 2px;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"]::after {
-        bottom: -1px; right: -1px;
-        border-width: 0 2px 2px 0;
+        background: rgba(20, 10, 28, 0.7);
+        clip-path: polygon(0 14px, 14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+        border: 1px solid rgba(0, 230, 255, 0.35);
+        box-shadow: 0 0 24px rgba(255, 0, 153, 0.08), inset 0 0 30px rgba(0,230,255,0.03);
+        padding: 0.6rem 1.3rem 1.1rem 1.3rem;
     }
 
-    /* En-tête */
     .nova-hero {
         padding: 1.8rem 0 1.4rem 0;
-        border-bottom: 1px solid rgba(34,211,238,0.2);
+        border-bottom: 1px solid rgba(255,0,153,0.3);
         margin-bottom: 1.6rem;
     }
     .nova-tag {
         font-family: 'JetBrains Mono', monospace;
-        color: #22d3ee;
-        font-size: 0.8rem;
-        letter-spacing: 2px;
+        color: #ff0099;
+        font-size: 0.78rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
     }
-    .nova-tag::before { content: "// "; opacity: 0.6; }
     .nova-titre {
-        font-family: 'Orbitron', sans-serif;
-        font-weight: 800;
-        font-size: 2.8rem;
-        color: #e6faff;
-        margin: 0.3rem 0 0.4rem 0;
-        text-shadow: 0 0 18px rgba(34,211,238,0.35);
-        letter-spacing: 1px;
+        font-family: 'Rajdhani', sans-serif;
+        font-weight: 700;
+        font-size: 3.4rem;
+        margin: 0.2rem 0 0.4rem 0;
+        letter-spacing: 2px;
+        color: #ffffff;
+        text-shadow:
+            0 0 8px rgba(0,230,255,0.6),
+            2px 0 0 rgba(255,0,153,0.5),
+            -2px 0 0 rgba(0,230,255,0.4);
     }
     .nova-soustitre {
-        color: #7d8ba1;
+        color: #9d93ab;
         font-size: 1rem;
         max-width: 660px;
         line-height: 1.55;
     }
 
-    /* Ligne de statistiques style "readout" */
-    .nova-stats {
-        display: flex;
-        gap: 2.2rem;
-        margin-top: 1.3rem;
-        flex-wrap: wrap;
-    }
-    .nova-stat-item {
-        font-family: 'JetBrains Mono', monospace;
-    }
+    .nova-stats { display: flex; gap: 2.4rem; margin-top: 1.3rem; flex-wrap: wrap; }
+    .nova-stat-item { font-family: 'JetBrains Mono', monospace; }
     .nova-stat-item .valeur {
-        color: #22d3ee;
-        font-size: 1.5rem;
+        color: #00e6ff;
+        font-size: 1.6rem;
         font-weight: 600;
+        text-shadow: 0 0 10px rgba(0,230,255,0.5);
     }
     .nova-stat-item .label {
-        color: #5b6b82;
-        font-size: 0.72rem;
-        letter-spacing: 1.5px;
+        color: #7a6f88;
+        font-size: 0.7rem;
+        letter-spacing: 2px;
         text-transform: uppercase;
     }
 
     h2, h3 {
-        font-family: 'JetBrains Mono', monospace !important;
-        color: #e6faff !important;
-        font-weight: 600 !important;
-        font-size: 1.15rem !important;
-        letter-spacing: 0.5px;
+        font-family: 'Rajdhani', sans-serif !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1.35rem !important;
+        letter-spacing: 1px;
+        border-left: 3px solid #ff0099;
+        padding-left: 0.6rem;
     }
-    h2::before, h3::before { content: "> "; color: #22d3ee; }
 
-    p, span, label, div { color: #94a3b8; }
+    p, span, label, div { color: #a99bb5; }
 
-    /* Boutons : contour cyan, remplissage au survol */
     div.stButton > button {
-        background: rgba(34,211,238,0.08);
-        color: #22d3ee;
-        border: 1px solid rgba(34,211,238,0.5);
-        border-radius: 4px;
-        padding: 0.5rem 1.3rem;
+        background: transparent;
+        color: #ff0099;
+        border: 1px solid #ff0099;
+        clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+        padding: 0.55rem 1.4rem;
         font-family: 'JetBrains Mono', monospace;
         font-weight: 600;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 0.85rem;
         transition: all 0.2s ease;
     }
     div.stButton > button:hover {
-        background: rgba(34,211,238,0.18);
-        box-shadow: 0 0 16px rgba(34,211,238,0.35);
-        color: #e6faff;
+        background: rgba(255,0,153,0.15);
+        box-shadow: 0 0 20px rgba(255,0,153,0.5);
+        color: #ffffff;
     }
 
-    /* Badge score : ambre, pour contraster avec le cyan (signal secondaire) */
     .nova-badge {
         display: inline-block;
-        background: rgba(251, 191, 36, 0.1);
-        border: 1px solid rgba(251, 191, 36, 0.4);
-        color: #fbbf24;
-        border-radius: 4px;
+        background: rgba(0, 230, 255, 0.1);
+        border: 1px solid rgba(0, 230, 255, 0.5);
+        color: #00e6ff;
         padding: 0.1rem 0.55rem;
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.78rem;
@@ -160,17 +134,17 @@ st.markdown(
 
     .nova-ligne {
         padding: 0.6rem 0;
-        border-bottom: 1px solid rgba(34,211,238,0.1);
-        color: #cbd5e1;
+        border-bottom: 1px solid rgba(255,0,153,0.12);
+        color: #d8d0e0;
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.92rem;
     }
     .nova-ligne:last-child { border-bottom: none; }
 
-    /* Champs de saisie et select : style console */
     div[data-baseweb="select"], div[data-baseweb="input"], input {
-        background-color: rgba(6,10,20,0.6) !important;
-        border-color: rgba(34,211,238,0.3) !important;
+        background-color: rgba(10,5,16,0.7) !important;
+        border-color: rgba(255,0,153,0.35) !important;
+        color: #d8d0e0 !important;
     }
     </style>
     """,
@@ -193,16 +167,14 @@ donnees, genres = charger_systeme()
 systeme = SystemeRecommandation(donnees, genres)
 nb_genres = len(set(genres.values()))
 
-# --- En-tête / HUD ---
 st.markdown(
     f"""
     <div class="nova-hero">
-        <div class="nova-tag">SYSTEME_RECOMMANDATION.ACTIF</div>
+        <div class="nova-tag">// Réseau de recommandation en ligne</div>
         <div class="nova-titre">NOVA RECO</div>
         <div class="nova-soustitre">
-            Panneau de contrôle du moteur de recommandation basé sur un graphe
-            utilisateur-item — chaque connexion détectée révèle une nouvelle
-            correspondance.
+            Le graphe utilisateur-item cartographie chaque connexion de la ville :
+            qui aime quoi, et qui est sur le point d'aimer quoi d'autre.
         </div>
         <div class="nova-stats">
             <div class="nova-stat-item">
@@ -223,7 +195,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- Menu de navigation ---
 page = st.sidebar.radio(
     "MODULE",
     [
@@ -236,7 +207,6 @@ page = st.sidebar.radio(
 )
 
 
-# --- Page : Graphe ---
 if page == "Graphe utilisateur-item":
     with st.container(border=True):
         st.header("Visualisation du graphe")
@@ -249,7 +219,6 @@ if page == "Graphe utilisateur-item":
         st.pyplot(fig)
 
 
-# --- Page : Utilisateurs similaires ---
 elif page == "Utilisateurs similaires":
     with st.container(border=True):
         st.header("Détection d'utilisateurs similaires")
@@ -269,7 +238,6 @@ elif page == "Utilisateurs similaires":
                 st.warning(f"Aucune correspondance détectée pour {utilisateur}.")
 
 
-# --- Page : Recommandations ---
 elif page == "Recommandations":
     with st.container(border=True):
         st.header("Génération de recommandations")
@@ -290,7 +258,6 @@ elif page == "Recommandations":
                 st.warning(f"Aucune recommandation disponible pour {utilisateur}.")
 
 
-# --- Page : Liste des utilisateurs ---
 elif page == "Liste des utilisateurs":
     with st.container(border=True):
         st.header("Registre des utilisateurs")
@@ -301,7 +268,6 @@ elif page == "Liste des utilisateurs":
                     st.write(f"{film} — {genre}")
 
 
-# --- Page : Ajouter un utilisateur ---
 elif page == "Ajouter un utilisateur":
     with st.container(border=True):
         st.header("Enregistrer un nouvel utilisateur")
