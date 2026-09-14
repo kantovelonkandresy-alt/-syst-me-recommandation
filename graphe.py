@@ -7,9 +7,9 @@ import plotly.graph_objects as go
 from matplotlib.patches import Patch
 from donnees import obtenir_donnees
 
-COULEUR_UTILISATEUR = "#6C5CE7"
-COULEUR_FILM = "#FD79A8"
-COULEUR_ARETE = "#D8D8E8"
+COULEUR_UTILISATEUR = "#E50914"
+COULEUR_FILM = "#B3B3B3"
+COULEUR_ARETE = "#444444"
 
 
 def creer_graphe():
@@ -143,7 +143,7 @@ def obtenir_figure_plotly(G):
             mode="markers+text",
             text=noms,
             textposition="top center",
-            textfont=dict(size=11, family="Poppins, sans-serif", color="#2D2D2D"),
+            textfont=dict(size=11, family="Poppins, sans-serif", color="#E5E5E5"),
             hovertext=textes_survol,
             hoverinfo="text",
             name=nom_legende,
@@ -168,20 +168,20 @@ def obtenir_figure_plotly(G):
             y=1.02,
             xanchor="right",
             x=1,
-            font=dict(family="Poppins, sans-serif", size=12, color="#2D2D2D"),
+            font=dict(family="Poppins, sans-serif", size=12, color="#E5E5E5"),
         ),
         margin=dict(l=10, r=10, t=40, b=10),
-        plot_bgcolor="#F7F5FC",
-        paper_bgcolor="#F7F5FC",
+        plot_bgcolor="#181818",
+        paper_bgcolor="#181818",
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         height=600,
         hoverlabel=dict(
-            bgcolor="white",
-            bordercolor="#A855F7",
+            bgcolor="#0A0A0A",
+            bordercolor="#E50914",
             font_size=13,
             font_family="Poppins, sans-serif",
-            font_color="#2D2D2D",
+            font_color="#E5E5E5",
         ),
     )
 
