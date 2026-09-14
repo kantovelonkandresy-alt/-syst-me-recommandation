@@ -4,6 +4,7 @@
 # Lancer avec : streamlit run app.py
 
 import hashlib
+import requests
 import streamlit as st
 from donnees import obtenir_donnees, obtenir_genres, ajouter_utilisateur
 from graphe import creer_graphe, obtenir_figure_plotly
@@ -41,12 +42,56 @@ def couleurs_poster(nom_film: str):
     return debut, fin, icone
 
 
+@st.cache_data(show_spinner=False)
+def obtenir_url_poster(nom_film: str):
+    """
+    Cherche l'affiche officielle du film via l'API gratuite OMDb.
+    Retourne None si aucune clé API n'est configurée dans les secrets,
+    si le film n'est pas trouvé, ou en cas d'erreur réseau — dans ce cas
+    l'application affichera automatiquement le poster généré à la place.
+    """
+    cle_api = st.secrets.get("OMDB_API_KEY", "")
+    if not cle_api:
+        return None
+    try:
+        reponse = requests.get(
+            "https://www.omdbapi.com/",
+            params={"t": nom_film, "apikey": cle_api},
+            timeout=5,
+        )
+        donnees_api = reponse.json()
+        url = donnees_api.get("Poster")
+        if url and url != "N/A":
+            return url
+    except Exception:
+        pass
+    return None
+
+
 def poster_html(nom_film: str, genre: str = "", badge: str = "") -> str:
-    """Construit le HTML d'un poster stylisé (généré, pas une vraie affiche).
+    """
+    Construit le HTML d'un poster. Si une affiche réelle est disponible
+    (via OMDb), elle est utilisée ; sinon un poster stylisé généré à
+    partir du nom du film est affiché à la place.
     Tout est écrit sur une seule ligne, sans espace de début, pour éviter
-    que Streamlit/Markdown interprète le contenu comme un bloc de code."""
-    debut, fin, icone = couleurs_poster(nom_film)
+    que Streamlit/Markdown interprète le contenu comme un bloc de code.
+    """
     badge_html = f'<div class="poster-badge">{badge}</div>' if badge else ""
+    url_reelle = obtenir_url_poster(nom_film)
+
+    if url_reelle:
+        return (
+            f'<div class="poster-card">'
+            f'{badge_html}'
+            f'<img src="{url_reelle}" class="poster-img" alt="{nom_film}">'
+            f'<div class="poster-overlay">'
+            f'<div class="poster-title">{nom_film}</div>'
+            f'<div class="poster-genre">{genre}</div>'
+            f'</div>'
+            f'</div>'
+        )
+
+    debut, fin, icone = couleurs_poster(nom_film)
     return (
         f'<div class="poster-card" style="background: linear-gradient(160deg, {debut}, {fin});">'
         f'{badge_html}'
@@ -160,12 +205,27 @@ st.markdown(
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
+        overflow: hidden;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         animation: fadeIn 0.4s ease-out;
     }
     .poster-card:hover {
         transform: translateY(-6px) scale(1.03);
         box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
+    }
+    .poster-img {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .poster-overlay {
+        position: relative;
+        z-index: 2;
+        background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.85) 100%);
+        margin: -0.9rem;
+        padding: 2.2rem 0.9rem 0.7rem;
     }
     .poster-icon {
         position: absolute;
