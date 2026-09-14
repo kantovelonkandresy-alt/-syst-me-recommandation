@@ -639,9 +639,10 @@ elif page == "liste":
         for i, (nom, films) in enumerate(utilisateurs_filtres.items()):
             with cols[i % 2]:
                 with st.expander(f"👤 {nom}  ·  {len(films)} film(s)"):
-                    for film in films:
-                        genre = genres.get(film, "Genre inconnu")
-                        st.markdown(f"🎬 **{film}** — *{genre}*")
+                    posters = "".join(
+                        poster_html(f, genres.get(f, "")) for f in films
+                    )
+                    st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
 
 # ============================================================
 #  PAGE : AJOUTER UN UTILISATEUR
@@ -655,6 +656,14 @@ elif page == "ajouter":
         "Films aimés (séparés par une virgule)",
         placeholder="Ex : Avengers, Titanic, Avatar",
     )
+
+    apercu_films = [f.strip() for f in films_texte.split(",") if f.strip()]
+    if apercu_films:
+        st.write("**Aperçu :**")
+        posters_apercu = "".join(
+            poster_html(f, genres.get(f, "Nouveau")) for f in apercu_films
+        )
+        st.markdown(f'<div class="poster-row">{posters_apercu}</div>', unsafe_allow_html=True)
 
     if st.button("➕ Ajouter", type="primary"):
         if nom in donnees:
