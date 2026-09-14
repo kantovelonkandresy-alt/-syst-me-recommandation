@@ -1,8 +1,9 @@
 # app.py
 # Application Web (Streamlit) du système de recommandation utilisateur-item.
-# Thème "Netflix" (noir & rouge).
+# Thème "Cinéma Doré" (navy + or) — posters générés + disposition en rangées.
 # Lancer avec : streamlit run app.py
 
+import hashlib
 import streamlit as st
 from donnees import obtenir_donnees, obtenir_genres, ajouter_utilisateur
 from graphe import creer_graphe, obtenir_figure_plotly
@@ -16,12 +17,51 @@ st.set_page_config(
 )
 
 # ============================================================
-#  STYLE PERSONNALISÉ (CSS) — thème Netflix (noir & rouge)
+#  PALETTE DE GRADIENTS POUR LES POSTERS GÉNÉRÉS
+#  (aucune image réelle n'est utilisée : chaque film reçoit un
+#  "poster" stylisé généré à partir de son nom, pour éviter tout
+#  problème de droits d'auteur sur les affiches officielles)
+# ============================================================
+GRADIENTS_POSTER = [
+    ("#1B2A4A", "#3A5A8C"),
+    ("#2E1F47", "#6C3FA6"),
+    ("#0F3D3E", "#1F8A70"),
+    ("#4A3B1F", "#D4AF37"),
+    ("#1F2937", "#4B5563"),
+    ("#142B3D", "#2C7DA0"),
+]
+ICONES_POSTER = ["🎬", "🎞️", "🍿", "🎭", "📽️", "⭐"]
+
+
+def couleurs_poster(nom_film: str):
+    """Choisit un dégradé et une icône de façon stable pour un film donné."""
+    h = int(hashlib.md5(nom_film.encode()).hexdigest(), 16)
+    debut, fin = GRADIENTS_POSTER[h % len(GRADIENTS_POSTER)]
+    icone = ICONES_POSTER[h % len(ICONES_POSTER)]
+    return debut, fin, icone
+
+
+def poster_html(nom_film: str, genre: str = "", badge: str = "") -> str:
+    """Construit le HTML d'un poster stylisé (généré, pas une vraie affiche)."""
+    debut, fin, icone = couleurs_poster(nom_film)
+    badge_html = f'<div class="poster-badge">{badge}</div>' if badge else ""
+    return f"""
+    <div class="poster-card" style="background: linear-gradient(160deg, {debut}, {fin});">
+        {badge_html}
+        <div class="poster-icon">{icone}</div>
+        <div class="poster-title">{nom_film}</div>
+        <div class="poster-genre">{genre}</div>
+    </div>
+    """
+
+
+# ============================================================
+#  STYLE PERSONNALISÉ (CSS) — thème "Cinéma Doré"
 # ============================================================
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Poppins', sans-serif;
@@ -31,190 +71,230 @@ st.markdown(
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes pulseRed {
-        0%, 100% { box-shadow: 0 0 16px rgba(229, 9, 20, 0.4); }
-        50% { box-shadow: 0 0 28px rgba(229, 9, 20, 0.65); }
-    }
     @keyframes floatIcon {
         0%, 100% { transform: translateY(0) rotate(-2deg); }
         50% { transform: translateY(-8px) rotate(2deg); }
     }
-    @keyframes bouncePop {
-        0% { transform: scale(0.7); opacity: 0; }
-        60% { transform: scale(1.08); opacity: 1; }
-        100% { transform: scale(1); }
-    }
-    @keyframes shimmer {
-        0% { background-position: -400px 0; }
-        100% { background-position: 400px 0; }
+    @keyframes glowGold {
+        0%, 100% { box-shadow: 0 0 16px rgba(212, 175, 55, 0.35); }
+        50% { box-shadow: 0 0 26px rgba(212, 175, 55, 0.55); }
     }
 
-    .hero-icon {
-        display: inline-block;
-        animation: floatIcon 2.4s ease-in-out infinite;
-    }
-
-    .genre-badge, .rang-badge, .avatar {
-        animation: bouncePop 0.4s ease-out;
-    }
-
-    button[kind="primary"]:active,
-    section[data-testid="stSidebar"] button:active {
-        transform: scale(0.95) !important;
-    }
-
-    section[data-testid="stSidebar"] button[kind="secondary"]:hover {
-        transform: translateX(4px) !important;
-    }
-
-    /* Fond général - noir profond façon Netflix */
+    /* Fond général */
     .stApp {
-        background: linear-gradient(180deg, #141414 0%, #0A0A0A 100%);
+        background: radial-gradient(circle at 15% 0%, #10182B 0%, #0A0E17 45%, #050608 100%);
     }
     [data-testid="stAppViewContainer"] * , [data-testid="stMarkdownContainer"] p {
-        color: #E5E5E5;
+        color: #EDE6D6;
     }
 
     /* Bannière d'en-tête */
     .hero {
-        background: linear-gradient(120deg, #8B0000 0%, #E50914 55%, #B81D24 100%);
-        padding: 2.6rem 2.4rem;
-        border-radius: 10px;
+        background: linear-gradient(120deg, #1B2A4A 0%, #12151F 60%, #0A0E17 100%);
+        padding: 2.4rem 2.4rem 1.8rem;
+        border-radius: 16px;
         margin-bottom: 1.8rem;
-        box-shadow: 0 10px 40px rgba(229, 9, 20, 0.35);
+        border: 1px solid rgba(212, 175, 55, 0.25);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         animation: fadeIn 0.6s ease-out;
-        border-left: 6px solid #E50914;
+    }
+    .hero-icon {
+        display: inline-block;
+        animation: floatIcon 2.4s ease-in-out infinite;
     }
     .hero h1 {
-        font-family: 'Bebas Neue', sans-serif;
-        color: white;
-        font-size: 3rem;
-        letter-spacing: 0.03em;
+        font-family: 'Playfair Display', serif;
+        background: linear-gradient(90deg, #D4AF37, #F2C14E, #D4AF37);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.7rem;
+        font-weight: 800;
         margin: 0;
-        text-shadow: 0 0 20px rgba(0,0,0,0.4);
+        letter-spacing: 0.01em;
     }
     .hero p {
-        color: rgba(255,255,255,0.92);
+        color: #B8B0A0;
         font-size: 1.02rem;
         margin-top: 0.5rem;
-        font-weight: 500;
+        font-weight: 400;
     }
-
-    /* Cartes de statistiques */
-    .stat-card {
-        background: #181818;
-        border-radius: 8px;
-        padding: 1.2rem 1.4rem;
-        text-align: center;
-        border: 1px solid #2A2A2A;
-        border-top: 3px solid #E50914;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        animation: fadeIn 0.7s ease-out;
+    .hero-stats {
+        display: flex;
+        gap: 0.8rem;
+        margin-top: 1.3rem;
+        flex-wrap: wrap;
     }
-    .stat-card:hover {
-        transform: translateY(-4px) scale(1.02);
-        box-shadow: 0 10px 24px rgba(229, 9, 20, 0.25);
-    }
-    .stat-card .value {
-        font-family: 'Bebas Neue', sans-serif;
-        font-size: 2.3rem;
-        color: #E50914;
-        letter-spacing: 0.02em;
-    }
-    .stat-card .label {
-        font-size: 0.78rem;
-        color: #999;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
+    .hero-pill {
+        background: rgba(212, 175, 55, 0.08);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        border-radius: 999px;
+        padding: 0.5rem 1.1rem;
+        font-size: 0.85rem;
         font-weight: 600;
+        color: #F2C14E;
     }
 
-    /* Cartes de résultats (utilisateurs / films) — effet "carte film" */
+    /* Posters générés */
+    .poster-row {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 0.4rem 0.2rem 1rem;
+    }
+    .poster-row::-webkit-scrollbar {
+        height: 6px;
+    }
+    .poster-row::-webkit-scrollbar-thumb {
+        background: rgba(212, 175, 55, 0.4);
+        border-radius: 4px;
+    }
+    .poster-card {
+        position: relative;
+        flex: 0 0 150px;
+        height: 210px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        animation: fadeIn 0.4s ease-out;
+    }
+    .poster-card:hover {
+        transform: translateY(-6px) scale(1.03);
+        box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
+    }
+    .poster-icon {
+        position: absolute;
+        top: 0.7rem;
+        left: 0.8rem;
+        font-size: 1.6rem;
+        opacity: 0.85;
+    }
+    .poster-badge {
+        position: absolute;
+        top: 0.6rem;
+        right: 0.6rem;
+        background: rgba(0,0,0,0.55);
+        border: 1px solid rgba(212, 175, 55, 0.5);
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #F2C14E;
+    }
+    .poster-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: white;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        line-height: 1.25;
+    }
+    .poster-genre {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.75);
+        margin-top: 0.2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Cartes de résultats (utilisateurs similaires) */
     .result-card {
-        background: #181818;
-        border-radius: 8px;
+        background: #12151F;
+        border-radius: 12px;
         padding: 1rem 1.4rem;
-        margin-bottom: 0.65rem;
-        border: 1px solid #2A2A2A;
-        border-left: 4px solid #E50914;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        margin-bottom: 0.6rem;
+        border: 1px solid rgba(255,255,255,0.07);
+        border-left: 4px solid #D4AF37;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
         animation: fadeIn 0.4s ease-out;
     }
     .result-card:hover {
-        transform: scale(1.015);
-        background: #222222;
-        box-shadow: 0 8px 24px rgba(229, 9, 20, 0.25);
+        transform: translateX(5px);
+        box-shadow: 0 8px 20px rgba(212, 175, 55, 0.15);
     }
     .result-card h4 {
         margin: 0 0 0.35rem 0;
-        color: #F5F5F5;
-        font-size: 1.08rem;
+        color: #F5F0E6;
+        font-size: 1.05rem;
         font-weight: 600;
-    }
-    .genre-badge {
-        display: inline-block;
-        background: rgba(229, 9, 20, 0.15);
-        color: #FF3B47;
-        border: 1px solid rgba(229, 9, 20, 0.35);
-        font-size: 0.72rem;
-        font-weight: 700;
-        padding: 0.18rem 0.65rem;
-        border-radius: 4px;
-        margin-left: 0.5rem;
-        vertical-align: middle;
-        text-transform: uppercase;
     }
     .score-text {
         font-size: 0.8rem;
-        color: #999;
-        margin-top: 0.35rem;
+        color: #9A9484;
+        margin-top: 0.3rem;
     }
-
     .avatar {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 34px;
-        height: 34px;
-        border-radius: 4px;
-        background: linear-gradient(135deg, #E50914, #8B0000);
-        color: white;
-        font-weight: 700;
-        font-size: 0.85rem;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #D4AF37, #8C6D1F);
+        color: #0A0E17;
+        font-weight: 800;
+        font-size: 0.8rem;
         margin-right: 0.6rem;
         vertical-align: middle;
     }
-
     .rang-badge {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         margin-right: 0.4rem;
         vertical-align: middle;
     }
 
+    /* Cartes de statistiques (page graphe) */
+    .stat-card {
+        background: #12151F;
+        border-radius: 14px;
+        padding: 1.1rem 1.3rem;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.07);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(212, 175, 55, 0.15);
+    }
+    .stat-card .value {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: #D4AF37;
+    }
+    .stat-card .label {
+        font-size: 0.75rem;
+        color: #9A9484;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
     .empty-state {
         text-align: center;
-        padding: 2.6rem 1rem;
-        color: #999;
-        background: #181818;
-        border-radius: 8px;
-        border: 1.5px dashed #E50914;
+        padding: 2.4rem 1rem;
+        color: #9A9484;
+        background: #12151F;
+        border-radius: 14px;
+        border: 1.5px dashed rgba(212, 175, 55, 0.3);
     }
     .empty-state .icon {
-        font-size: 2.3rem;
-        margin-bottom: 0.6rem;
+        font-size: 2.2rem;
+        margin-bottom: 0.5rem;
         display: block;
     }
 
     /* Barre latérale */
     section[data-testid="stSidebar"] {
-        background: #0A0A0A;
-        border-right: 1px solid #2A2A2A;
+        background: #070A11;
+        border-right: 1px solid rgba(212, 175, 55, 0.15);
     }
     section[data-testid="stSidebar"] * {
-        color: #E5E5E5 !important;
+        color: #EDE6D6 !important;
     }
     section[data-testid="stSidebar"] button {
-        border-radius: 6px !important;
+        border-radius: 10px !important;
         text-align: left !important;
         justify-content: flex-start !important;
         font-weight: 500 !important;
@@ -222,49 +302,51 @@ st.markdown(
         margin-bottom: 0.3rem !important;
     }
     section[data-testid="stSidebar"] button[kind="secondary"] {
-        background: #181818 !important;
-        border: 1px solid #2A2A2A !important;
+        background: rgba(255,255,255,0.03) !important;
+        border: 1px solid rgba(255,255,255,0.07) !important;
     }
     section[data-testid="stSidebar"] button[kind="secondary"]:hover {
-        background: #222222 !important;
-        border-color: #E50914 !important;
+        background: rgba(212, 175, 55, 0.1) !important;
+        border-color: rgba(212, 175, 55, 0.35) !important;
+        transform: translateX(4px);
     }
     section[data-testid="stSidebar"] button[kind="primary"] {
-        background: #E50914 !important;
+        background: linear-gradient(135deg, #8C6D1F, #D4AF37) !important;
+        color: #0A0E17 !important;
         border: none !important;
-        animation: pulseRed 2.5s ease-in-out infinite;
+        animation: glowGold 2.6s ease-in-out infinite;
     }
 
-    /* Boutons principaux (zone centrale) */
+    /* Boutons principaux */
     button[kind="primary"] {
-        background: #E50914 !important;
+        background: linear-gradient(135deg, #8C6D1F, #D4AF37) !important;
+        color: #0A0E17 !important;
         border: none !important;
-        border-radius: 4px !important;
-        box-shadow: 0 4px 14px rgba(229, 9, 20, 0.4) !important;
-        transition: transform 0.15s ease, background 0.15s ease !important;
+        box-shadow: 0 4px 16px rgba(212, 175, 55, 0.35) !important;
         font-weight: 700 !important;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
+        transition: transform 0.15s ease !important;
     }
     button[kind="primary"]:hover {
-        background: #F6121D !important;
-        transform: scale(1.03);
+        transform: translateY(-2px);
+    }
+    button[kind="primary"]:active {
+        transform: scale(0.96) !important;
     }
 
-    /* Barres de progression rouges */
+    /* Barres de progression dorées */
     .stProgress > div > div {
-        background: linear-gradient(90deg, #8B0000, #E50914) !important;
+        background: linear-gradient(90deg, #8C6D1F, #D4AF37, #F2C14E) !important;
     }
     .stProgress > div {
-        background: #2A2A2A !important;
+        background: rgba(255,255,255,0.08) !important;
     }
 
     /* Champs de saisie */
     input, textarea, .stSelectbox div[data-baseweb="select"] > div {
-        background: #181818 !important;
-        border: 1px solid #333 !important;
-        color: #E5E5E5 !important;
-        border-radius: 4px !important;
+        background: #12151F !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: #EDE6D6 !important;
+        border-radius: 8px !important;
     }
 
     #MainMenu, footer {visibility: hidden;}
@@ -285,14 +367,20 @@ donnees, genres = charger_systeme()
 systeme = SystemeRecommandation(donnees, genres)
 
 # ============================================================
-#  BANNIÈRE D'EN-TÊTE
+#  BANNIÈRE D'EN-TÊTE (statistiques intégrées)
 # ============================================================
+total_connexions = sum(len(f) for f in donnees.values())
 st.markdown(
-    """
+    f"""
     <div class="hero">
-        <h1><span class="hero-icon">🎬</span> CINÉRECO</h1>
+        <h1><span class="hero-icon">🎬</span> CinéReco</h1>
         <p>Système de recommandation basé sur un graphe utilisateur-item —
         similarité de Jaccard + bonus de genre</p>
+        <div class="hero-stats">
+            <div class="hero-pill">👥 {len(donnees)} utilisateurs</div>
+            <div class="hero-pill">🎞️ {len(genres)} films</div>
+            <div class="hero-pill">🔗 {total_connexions} connexions</div>
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -326,64 +414,19 @@ for cle, libelle in PAGES:
 
 page = st.session_state.page
 
-st.sidebar.markdown("---")
-st.sidebar.markdown(
-    f"""
-    <div style="text-align:center;">
-        <div style="font-family:'Bebas Neue',sans-serif; font-size:1.9rem; color:#E50914;">
-            {len(donnees)}
-        </div>
-        <div style="font-size:0.75rem; opacity:0.6;">UTILISATEURS</div>
-        <br>
-        <div style="font-family:'Bebas Neue',sans-serif; font-size:1.9rem; color:#E50914;">
-            {len(genres)}
-        </div>
-        <div style="font-size:0.75rem; opacity:0.6;">FILMS</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# ============================================================
-#  STATISTIQUES RAPIDES
-# ============================================================
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown(
-        f'<div class="stat-card" style="animation-delay:0s;"><div class="value">{len(donnees)}</div>'
-        f'<div class="label">Utilisateurs</div></div>',
-        unsafe_allow_html=True,
-    )
-with col2:
-    st.markdown(
-        f'<div class="stat-card" style="animation-delay:0.12s;"><div class="value">{len(genres)}</div>'
-        f'<div class="label">Films</div></div>',
-        unsafe_allow_html=True,
-    )
-with col3:
-    total_connexions = sum(len(f) for f in donnees.values())
-    st.markdown(
-        f'<div class="stat-card" style="animation-delay:0.24s;"><div class="value">{total_connexions}</div>'
-        f'<div class="label">Connexions</div></div>',
-        unsafe_allow_html=True,
-    )
-
-st.write("")
-
 # ============================================================
 #  PAGE : GRAPHE
 # ============================================================
 if page == "graphe":
     st.subheader("Visualisation interactive du graphe utilisateur-item")
     st.write(
-        "🔴 Les noeuds **rouges** représentent les utilisateurs · "
-        "⚫ Les noeuds **gris foncé** représentent les films. "
-        "Survolez un noeud avec la souris pour voir ses détails — "
-        "vous pouvez aussi zoomer et déplacer le graphe."
+        "🟡 Les noeuds **dorés** représentent les utilisateurs · "
+        "🔵 Les noeuds **bleus** représentent les films. "
+        "Survolez un noeud pour voir ses détails — zoomez et déplacez le graphe."
     )
     st.markdown(
-        '<div style="background:#181818; border-radius:10px; padding:1rem; '
-        'border:1px solid #2A2A2A;">',
+        '<div style="background:#12151F; border-radius:14px; padding:1rem; '
+        'border:1px solid rgba(255,255,255,0.07);">',
         unsafe_allow_html=True,
     )
     graphe = creer_graphe()
@@ -417,6 +460,14 @@ elif page == "similaires":
                     unsafe_allow_html=True,
                 )
                 st.progress(min(score, 1.0))
+
+            # Aperçu des films de l'utilisateur sélectionné, en rangée de posters
+            st.write("")
+            st.write(f"**Films aimés par {utilisateur} :**")
+            posters = "".join(
+                poster_html(f, genres.get(f, "")) for f in donnees[utilisateur]
+            )
+            st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
         else:
             st.warning(f"Aucun utilisateur similaire trouvé pour {utilisateur}.")
     else:
@@ -438,27 +489,24 @@ elif page == "recommandations":
     st.subheader("Obtenir des recommandations personnalisées")
     utilisateur = st.selectbox("Choisissez un utilisateur :", list(donnees.keys()))
 
-    RANGS = ["🥇", "🥈", "🥉"]
-
     if st.button("✨ Générer les recommandations", type="primary"):
         recommandations = systeme.generer_recommandations(utilisateur)
         if recommandations:
             st.write(f"**Films recommandés pour {utilisateur} :**")
             score_max = max(s for _, s in recommandations) or 1
-            for i, (film, score) in enumerate(recommandations):
-                rang = RANGS[i] if i < 3 else ""
-                genre = genres.get(film, "Genre inconnu")
-                st.markdown(
-                    f"""
-                    <div class="result-card" style="animation-delay:{i * 0.08}s;">
-                        <h4><span class="rang-badge">{rang}</span>🎬 {film}
-                        <span class="genre-badge">{genre}</span></h4>
-                        <div class="score-text">Score de pertinence : {score}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
+            posters = "".join(
+                poster_html(
+                    film,
+                    genres.get(film, ""),
+                    badge=f"{score:.2f}",
                 )
-                st.progress(min(score / score_max, 1.0))
+                for film, score in recommandations
+            )
+            st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
+
+            st.write("")
+            for film, score in recommandations:
+                st.progress(min(score / score_max, 1.0), text=film)
         else:
             st.warning(f"Aucune recommandation disponible pour {utilisateur}.")
     else:
@@ -474,17 +522,14 @@ elif page == "recommandations":
         )
 
 # ============================================================
-#  PAGE : LISTE DES UTILISATEURS
+#  PAGE : LISTE DES UTILISATEURS (grille de posters par utilisateur)
 # ============================================================
 elif page == "liste":
     st.subheader("Tous les utilisateurs et leurs films")
-    cols = st.columns(2)
-    for i, (nom, films) in enumerate(donnees.items()):
-        with cols[i % 2]:
-            with st.expander(f"👤 {nom}  ·  {len(films)} film(s)"):
-                for film in films:
-                    genre = genres.get(film, "Genre inconnu")
-                    st.markdown(f"🎬 **{film}** — *{genre}*")
+    for nom, films in donnees.items():
+        st.markdown(f"#### 👤 {nom}  ·  {len(films)} film(s)")
+        posters = "".join(poster_html(f, genres.get(f, "")) for f in films)
+        st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
 
 # ============================================================
 #  PAGE : AJOUTER UN UTILISATEUR
@@ -493,8 +538,8 @@ elif page == "ajouter":
     st.subheader("Ajouter un nouvel utilisateur")
 
     st.markdown(
-        '<div style="background:#181818; border-radius:10px; padding:1.5rem; '
-        'border:1px solid #2A2A2A;">',
+        '<div style="background:#12151F; border-radius:14px; padding:1.5rem; '
+        'border:1px solid rgba(255,255,255,0.07);">',
         unsafe_allow_html=True,
     )
     nom = st.text_input("Nom du nouvel utilisateur")
@@ -521,8 +566,8 @@ elif page == "ajouter":
 
 st.markdown(
     """
-    <div style="text-align:center; margin-top:2.5rem; padding:1rem; color:#666; font-size:0.8rem;">
-        🎬 CINÉRECO — Projet L2 · Python / NetworkX / Streamlit
+    <div style="text-align:center; margin-top:2.5rem; padding:1rem; color:#6B6455; font-size:0.8rem;">
+        🎬 CinéReco — Projet L2 · Python / NetworkX / Streamlit
     </div>
     """,
     unsafe_allow_html=True,
