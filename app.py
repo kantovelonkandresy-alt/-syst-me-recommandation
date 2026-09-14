@@ -42,21 +42,32 @@ def couleurs_poster(nom_film: str):
 
 @st.cache_data(show_spinner=False)
 def obtenir_url_poster(nom_film: str):
-    cle_api = st.secrets.get("OMDB_API_KEY", "")
+    """Maka poster OMDb raha misy API key; raha tsy misy dia fallback gradient."""
+    try:
+        cle_api = st.secrets.get("OMDB_API_KEY", "")
+    except Exception:
+        # Tsy misy secrets.toml: ampiasaina ho azy ny poster gradient.
+        cle_api = ""
+
     if not cle_api:
         return None
+
     try:
         reponse = requests.get(
             "https://www.omdbapi.com/",
             params={"t": nom_film, "apikey": cle_api},
             timeout=5,
         )
+        reponse.raise_for_status()
         donnees_api = reponse.json()
         url = donnees_api.get("Poster")
         if url and url != "N/A":
             return url
     except Exception:
+        # Raha tsy mandeha OMDb na tsy hita ilay film,
+        # dia hiverina amin'ny poster gradient ao amin'ny poster_html().
         pass
+
     return None
 
 
@@ -484,6 +495,196 @@ st.markdown(
         section[data-testid="stSidebar"] h3,
         section[data-testid="stSidebar"] button {
             animation: none !important;
+        }
+    }
+
+
+
+    /* ============================================================
+       PREMIUM HOVER EFFECTS — buttons and cards
+       ============================================================ */
+
+    /* Boutons rehetra */
+    button[kind="primary"],
+    button[kind="secondary"],
+    section[data-testid="stSidebar"] button {
+        position: relative;
+        transition:
+            transform 220ms cubic-bezier(.22, .8, .25, 1),
+            box-shadow 220ms ease,
+            border-color 220ms ease,
+            background 220ms ease,
+            filter 220ms ease !important;
+    }
+
+    button[kind="primary"]:hover {
+        transform: translateY(-5px) scale(1.015) !important;
+        filter: brightness(1.12) saturate(1.08);
+        box-shadow:
+            0 14px 30px rgba(124, 58, 237, .48),
+            0 0 26px rgba(168, 85, 247, .30),
+            inset 0 1px 0 rgba(255, 255, 255, .22) !important;
+    }
+
+    button[kind="primary"]:active {
+        transform: translateY(-1px) scale(.99) !important;
+        box-shadow: 0 5px 14px rgba(124, 58, 237, .30) !important;
+    }
+
+    button[kind="secondary"]:hover {
+        transform: translateY(-4px) !important;
+        background: rgba(139, 92, 246, .20) !important;
+        border-color: rgba(192, 132, 252, .72) !important;
+        box-shadow:
+            0 10px 24px rgba(0, 0, 0, .25),
+            0 0 18px rgba(139, 92, 246, .16) !important;
+    }
+
+    button[kind="secondary"]:active {
+        transform: translateY(-1px) !important;
+    }
+
+    /* Stat cards */
+    .stat-card {
+        transition:
+            transform 280ms cubic-bezier(.22, .8, .25, 1),
+            box-shadow 280ms ease,
+            border-color 280ms ease !important;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-9px) scale(1.018) !important;
+        border-color: rgba(255, 255, 255, .26) !important;
+        box-shadow:
+            0 24px 52px rgba(0, 0, 0, .36),
+            0 0 30px rgba(139, 92, 246, .22),
+            inset 0 1px 0 rgba(255, 255, 255, .16) !important;
+    }
+
+    .stat-card .value {
+        transition: transform 280ms ease, text-shadow 280ms ease;
+    }
+
+    .stat-card:hover .value {
+        transform: scale(1.08);
+        text-shadow:
+            0 0 12px rgba(192, 132, 252, .65),
+            0 0 28px rgba(56, 189, 248, .28);
+    }
+
+    /* Cards glass et result cards */
+    .glass-card,
+    .result-card,
+    .empty-state {
+        transition:
+            transform 260ms cubic-bezier(.22, .8, .25, 1),
+            box-shadow 260ms ease,
+            border-color 260ms ease,
+            background 260ms ease !important;
+    }
+
+    .glass-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(56, 189, 248, .38);
+        box-shadow:
+            0 24px 54px rgba(0, 0, 0, .30),
+            0 0 26px rgba(56, 189, 248, .13),
+            inset 0 1px 0 rgba(255, 255, 255, .12);
+    }
+
+    .result-card:hover {
+        transform: translateX(8px) translateY(-3px) !important;
+        border-color: rgba(192, 132, 252, .60) !important;
+        box-shadow:
+            0 16px 34px rgba(0, 0, 0, .30),
+            0 0 24px rgba(139, 92, 246, .20),
+            inset 0 1px 0 rgba(255, 255, 255, .10) !important;
+    }
+
+    .result-card h4,
+    .result-card .score-text,
+    .genre-badge {
+        transition: color 220ms ease, transform 220ms ease;
+    }
+
+    .result-card:hover h4 {
+        color: #ffffff !important;
+        transform: translateX(3px);
+    }
+
+    .result-card:hover .genre-badge {
+        transform: scale(1.06);
+    }
+
+    /* Movie posters */
+    .poster-card {
+        transition:
+            transform 300ms cubic-bezier(.22, .8, .25, 1),
+            box-shadow 300ms ease,
+            border-color 300ms ease !important;
+    }
+
+    .poster-card:hover {
+        transform: translateY(-12px) scale(1.055) !important;
+        border-color: rgba(56, 189, 248, .78) !important;
+        box-shadow:
+            0 26px 48px rgba(0, 0, 0, .50),
+            0 0 28px rgba(56, 189, 248, .25),
+            inset 0 1px 0 rgba(255, 255, 255, .20) !important;
+        z-index: 8;
+    }
+
+    .poster-card:hover .poster-title {
+        text-shadow: 0 2px 12px rgba(0, 0, 0, .8);
+    }
+
+    /* Chart cards */
+    div[data-testid="stPlotlyChart"] {
+        transition:
+            transform 280ms cubic-bezier(.22, .8, .25, 1),
+            box-shadow 280ms ease,
+            border-color 280ms ease !important;
+    }
+
+    div[data-testid="stPlotlyChart"]:hover {
+        transform: translateY(-6px) scale(1.006) !important;
+        border-color: rgba(56, 189, 248, .62) !important;
+        box-shadow:
+            0 28px 58px rgba(0, 0, 0, .38),
+            0 0 32px rgba(56, 189, 248, .20),
+            inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+    }
+
+    /* Sidebar navigation */
+    section[data-testid="stSidebar"] button:hover {
+        transform: translateX(7px) translateY(-2px) !important;
+    }
+
+    section[data-testid="stSidebar"] button[kind="primary"]:hover {
+        box-shadow:
+            0 12px 28px rgba(124, 58, 237, .46),
+            0 0 22px rgba(168, 85, 247, .24) !important;
+    }
+
+    /* Focus clavier: garde l'interface accessible */
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+        outline: 2px solid #c084fc !important;
+        outline-offset: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        button[kind="primary"],
+        button[kind="secondary"],
+        section[data-testid="stSidebar"] button,
+        .stat-card,
+        .glass-card,
+        .result-card,
+        .empty-state,
+        .poster-card,
+        div[data-testid="stPlotlyChart"] {
+            transition: none !important;
         }
     }
 
