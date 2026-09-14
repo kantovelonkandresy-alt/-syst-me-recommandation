@@ -1,13 +1,15 @@
 # graphe.py
-# Ce fichier construit le graphe bipartite utilisateur-item et fournit
-# deux façons de l'afficher : Matplotlib (statique, pour l'export PNG)
-# et Plotly (interactif, pour l'application Web).
+# Ce fichier construit et affiche le graphe bipartite utilisateur-item
 
 import networkx as nx
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 import plotly.graph_objects as go
+from matplotlib.patches import Patch
 from donnees import obtenir_donnees
+
+COULEUR_UTILISATEUR = "#7F5AF0"
+COULEUR_FILM = "#00F5D4"
+COULEUR_ARETE = "#3D3A52"
 
 
 def creer_graphe():
@@ -18,10 +20,12 @@ def creer_graphe():
     - Une arête (edge) entre un utilisateur et un film s'il l'aime
     """
     G = nx.Graph()
+
     donnees = obtenir_donnees()
 
     for utilisateur, films in donnees.items():
         G.add_node(utilisateur, type="utilisateur")
+
         for film in films:
             G.add_node(film, type="film")
             G.add_edge(utilisateur, film)
@@ -31,134 +35,170 @@ def creer_graphe():
 
 def obtenir_figure_graphe(G):
     """
-    Construit et retourne une figure Matplotlib statique du graphe
-    (utilisée par le programme terminal main.py et pour l'export PNG).
+    Construit et retourne une figure Matplotlib du graphe (sans l'afficher).
+    Utilisée à la fois par le programme terminal (main.py) et par
+    l'application Web (app.py).
     """
-    couleurs, tailles = [], []
+    couleurs = []
+    tailles = []
 
     for noeud, attributs in G.nodes(data=True):
         if attributs["type"] == "utilisateur":
-            couleurs.append("lightblue")
+            couleurs.append(COULEUR_UTILISATEUR)
         else:
-            couleurs.append("orange")
-        tailles.append(300 + G.degree(noeud) * 250)
+            couleurs.append(COULEUR_FILM)
 
-    position = nx.spring_layout(G, seed=42, k=0.6)
+        degre = G.degree(noeud)
+        tailles.append(500 + degre * 320)
+
+    position = nx.kamada_kawai_layout(G)
 
     fig, ax = plt.subplots(figsize=(9, 7))
-    nx.draw(
-        G, pos=position, with_labels=True, node_color=couleurs,
-        node_size=tailles, font_size=8, font_weight="bold",
-        edge_color="gray", ax=ax,
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
+
+    nx.draw_networkx_edges(
+        G, pos=position, edge_color=COULEUR_ARETE, width=1.6, ax=ax
     )
+    nx.draw_networkx_nodes(
+        G,
+        pos=position,
+        node_color=couleurs,
+        node_size=tailles,
+        edgecolors="white",
+        linewidths=2.2,
+        ax=ax,
+    )
+    nx.draw_networkx_labels(
+        G,
+        pos=position,
+        font_size=9,
+        font_weight="bold",
+        font_family="sans-serif",
+        font_color="#2D2D2D",
+        ax=ax,
+    )
+
     legende = [
-        Patch(facecolor="lightblue", label="Utilisateur"),
-        Patch(facecolor="orange", label="Film"),
+        Patch(facecolor=COULEUR_UTILISATEUR, label="Utilisateur"),
+        Patch(facecolor=COULEUR_FILM, label="Film"),
     ]
-    ax.legend(handles=legende, loc="upper right")
-    ax.set_title("Graphe utilisateur-item\n(taille du noeud = nombre de connexions)")
+    ax.legend(
+        handles=legende,
+        loc="upper right",
+        frameon=True,
+        facecolor="white",
+        edgecolor="#EEEEEE",
+        fontsize=10,
+    )
+
+    ax.set_axis_off()
+    fig.tight_layout()
+
     return fig
 
 
-def afficher_graphe(G, sauvegarder=False, chemin_fichier="graphe.png"):
-    """Affiche le graphe dans une fenêtre (utilisé par le programme terminal)."""
-    fig = obtenir_figure_graphe(G)
-    if sauvegarder:
-        fig.savefig(chemin_fichier, dpi=150, bbox_inches="tight")
-        print(f"✔ Graphe sauvegardé sous '{chemin_fichier}'")
-    plt.show()
-
-
-def obtenir_figure_plotly(G, utilisateur_selectionne=None):
+def obtenir_figure_plotly(G):
     """
-    Construit une figure Plotly interactive du graphe : zoom, déplacement,
-    et infobulle (hover) au survol de chaque noeud.
-
-    Si utilisateur_selectionne est fourni, ses arêtes et son noeud sont
-    mis en évidence (surlignés) pour montrer ses connexions.
+    Construit une version interactive (Plotly) du graphe utilisateur-item :
+    survoler un noeud affiche son nom et son nombre de connexions,
+    et le graphe peut être zoomé / déplacé à la souris.
     """
-    position = nx.spring_layout(G, seed=42, k=0.6)
+    position = nx.kamada_kawai_layout(G)
 
-    # --- Traces des arêtes ---
+    # --- Traits (arêtes) ---
     arete_x, arete_y = [], []
-    arete_x_surlignee, arete_y_surlignee = [], []
-
-    for noeud_a, noeud_b in G.edges():
-        x0, y0 = position[noeud_a]
-        x1, y1 = position[noeud_b]
-
-        est_connectee = utilisateur_selectionne in (noeud_a, noeud_b)
-        if est_connectee:
-            arete_x_surlignee += [x0, x1, None]
-            arete_y_surlignee += [y0, y1, None]
-        else:
-            arete_x += [x0, x1, None]
-            arete_y += [y0, y1, None]
+    for u, v in G.edges():
+        x0, y0 = position[u]
+        x1, y1 = position[v]
+        arete_x += [x0, x1, None]
+        arete_y += [y0, y1, None]
 
     trace_aretes = go.Scatter(
-        x=arete_x, y=arete_y, mode="lines",
-        line=dict(width=1, color="rgba(150,150,150,0.4)"),
-        hoverinfo="none", showlegend=False,
-    )
-    trace_aretes_surlignees = go.Scatter(
-        x=arete_x_surlignee, y=arete_y_surlignee, mode="lines",
-        line=dict(width=2.5, color="rgba(236,72,153,0.9)"),
-        hoverinfo="none", showlegend=False,
+        x=arete_x,
+        y=arete_y,
+        line=dict(width=1.3, color=COULEUR_ARETE),
+        hoverinfo="none",
+        mode="lines",
+        showlegend=False,
     )
 
-    # --- Traces des noeuds (séparées par type pour la légende) ---
-    traces_noeuds = []
-    for type_noeud, couleur, nom_legende in [
-        ("utilisateur", "#A855F7", "Utilisateur"),
-        ("film", "#EC4899", "Film"),
-    ]:
-        xs, ys, textes, tailles, contours = [], [], [], [], []
+    # --- Noeuds utilisateurs et films séparés (pour la légende) ---
+    def construire_trace(type_noeud, couleur, nom_legende, prefixe_info):
+        xs, ys, tailles, textes_survol, noms = [], [], [], [], []
         for noeud, attributs in G.nodes(data=True):
             if attributs["type"] != type_noeud:
                 continue
             x, y = position[noeud]
+            degre = G.degree(noeud)
             xs.append(x)
             ys.append(y)
-            degre = G.degree(noeud)
-            textes.append(f"{noeud}<br>{degre} connexion(s)")
-            tailles.append(18 + degre * 6)
-            contours.append(
-                "#22D3EE" if noeud == utilisateur_selectionne else "rgba(255,255,255,0.6)"
-            )
+            tailles.append(22 + degre * 9)
+            textes_survol.append(f"{prefixe_info} <b>{noeud}</b><br>{degre} connexion(s)")
+            noms.append(noeud)
 
-        traces_noeuds.append(
-            go.Scatter(
-                x=xs, y=ys, mode="markers+text",
-                text=[n for n, a in G.nodes(data=True) if a["type"] == type_noeud],
-                textposition="top center",
-                textfont=dict(size=10, color="#EDEBF5"),
-                hovertext=textes, hoverinfo="text",
-                marker=dict(
-                    size=tailles, color=couleur,
-                    line=dict(width=2, color=contours),
-                ),
-                name=nom_legende,
-            )
+        return go.Scatter(
+            x=xs,
+            y=ys,
+            mode="markers+text",
+            text=noms,
+            textposition="top center",
+            textfont=dict(size=11, family="Poppins, sans-serif", color="#EDE6D6"),
+            hovertext=textes_survol,
+            hoverinfo="text",
+            name=nom_legende,
+            marker=dict(
+                color=couleur,
+                size=tailles,
+                line=dict(width=2, color="white"),
+            ),
         )
 
-    fig = go.Figure(
-        data=[trace_aretes, trace_aretes_surlignees] + traces_noeuds,
-        layout=go.Layout(
-            showlegend=True,
-            legend=dict(
-                orientation="h", yanchor="bottom", y=1.02,
-                font=dict(color="#EDEBF5"),
-            ),
-            hovermode="closest",
-            margin=dict(b=10, l=10, r=10, t=10),
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            plot_bgcolor="rgba(0,0,0,0)",
-            paper_bgcolor="rgba(0,0,0,0)",
-            height=520,
+    trace_utilisateurs = construire_trace(
+        "utilisateur", COULEUR_UTILISATEUR, "Utilisateur", "👤"
+    )
+    trace_films = construire_trace("film", COULEUR_FILM, "Film", "🎬")
+
+    fig = go.Figure(data=[trace_aretes, trace_utilisateurs, trace_films])
+    fig.update_layout(
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            font=dict(family="Poppins, sans-serif", size=12, color="#EDE6D6"),
+        ),
+        margin=dict(l=10, r=10, t=40, b=10),
+        plot_bgcolor="#12151F",
+        paper_bgcolor="#12151F",
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        height=600,
+        hoverlabel=dict(
+            bgcolor="#0A0E17",
+            bordercolor="#D4AF37",
+            font_size=13,
+            font_family="Poppins, sans-serif",
+            font_color="#EDE6D6",
         ),
     )
+
     return fig
+
+
+def afficher_graphe(G, sauvegarder=False, chemin_fichier="graphe.png"):
+    """
+    Affiche le graphe dans une fenêtre (utilisé par le programme terminal).
+    """
+    fig = obtenir_figure_graphe(G)
+
+    if sauvegarder:
+        fig.savefig(chemin_fichier, dpi=150, bbox_inches="tight")
+        print(f"✔ Graphe sauvegardé sous '{chemin_fichier}'")
+
+    plt.show()
 
 
 if __name__ == "__main__":
