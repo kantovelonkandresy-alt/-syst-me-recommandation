@@ -35,6 +35,37 @@ st.markdown(
         0%, 100% { box-shadow: 0 0 16px rgba(229, 9, 20, 0.4); }
         50% { box-shadow: 0 0 28px rgba(229, 9, 20, 0.65); }
     }
+    @keyframes floatIcon {
+        0%, 100% { transform: translateY(0) rotate(-2deg); }
+        50% { transform: translateY(-8px) rotate(2deg); }
+    }
+    @keyframes bouncePop {
+        0% { transform: scale(0.7); opacity: 0; }
+        60% { transform: scale(1.08); opacity: 1; }
+        100% { transform: scale(1); }
+    }
+    @keyframes shimmer {
+        0% { background-position: -400px 0; }
+        100% { background-position: 400px 0; }
+    }
+
+    .hero-icon {
+        display: inline-block;
+        animation: floatIcon 2.4s ease-in-out infinite;
+    }
+
+    .genre-badge, .rang-badge, .avatar {
+        animation: bouncePop 0.4s ease-out;
+    }
+
+    button[kind="primary"]:active,
+    section[data-testid="stSidebar"] button:active {
+        transform: scale(0.95) !important;
+    }
+
+    section[data-testid="stSidebar"] button[kind="secondary"]:hover {
+        transform: translateX(4px) !important;
+    }
 
     /* Fond général - noir profond façon Netflix */
     .stApp {
@@ -259,7 +290,7 @@ systeme = SystemeRecommandation(donnees, genres)
 st.markdown(
     """
     <div class="hero">
-        <h1>🎬 CINÉRECO</h1>
+        <h1><span class="hero-icon">🎬</span> CINÉRECO</h1>
         <p>Système de recommandation basé sur un graphe utilisateur-item —
         similarité de Jaccard + bonus de genre</p>
     </div>
@@ -319,20 +350,20 @@ st.sidebar.markdown(
 col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown(
-        f'<div class="stat-card"><div class="value">{len(donnees)}</div>'
+        f'<div class="stat-card" style="animation-delay:0s;"><div class="value">{len(donnees)}</div>'
         f'<div class="label">Utilisateurs</div></div>',
         unsafe_allow_html=True,
     )
 with col2:
     st.markdown(
-        f'<div class="stat-card"><div class="value">{len(genres)}</div>'
+        f'<div class="stat-card" style="animation-delay:0.12s;"><div class="value">{len(genres)}</div>'
         f'<div class="label">Films</div></div>',
         unsafe_allow_html=True,
     )
 with col3:
     total_connexions = sum(len(f) for f in donnees.values())
     st.markdown(
-        f'<div class="stat-card"><div class="value">{total_connexions}</div>'
+        f'<div class="stat-card" style="animation-delay:0.24s;"><div class="value">{total_connexions}</div>'
         f'<div class="label">Connexions</div></div>',
         unsafe_allow_html=True,
     )
@@ -378,7 +409,7 @@ elif page == "similaires":
                 initiales = nom[:2].upper()
                 st.markdown(
                     f"""
-                    <div class="result-card">
+                    <div class="result-card" style="animation-delay:{i * 0.08}s;">
                         <h4><span class="rang-badge">{rang}</span><span class="avatar">{initiales}</span>{nom}</h4>
                         <div class="score-text">Similarité : {score * 100:.1f}%</div>
                     </div>
@@ -419,7 +450,7 @@ elif page == "recommandations":
                 genre = genres.get(film, "Genre inconnu")
                 st.markdown(
                     f"""
-                    <div class="result-card">
+                    <div class="result-card" style="animation-delay:{i * 0.08}s;">
                         <h4><span class="rang-badge">{rang}</span>🎬 {film}
                         <span class="genre-badge">{genre}</span></h4>
                         <div class="score-text">Score de pertinence : {score}</div>
