@@ -340,6 +340,371 @@ st.markdown(
     ::-webkit-scrollbar-thumb { background: #7C3AED; border-radius: 10px; }
 
     #MainMenu, footer {visibility: hidden;}
+
+
+    /* ============================================================
+       UI ENHANCEMENTS — CSS only
+       ============================================================ */
+
+    :root {
+        --aurora-violet: #7C3AED;
+        --aurora-violet-light: #A855F7;
+        --aurora-cyan: #22D3EE;
+        --aurora-amber: #F59E0B;
+        --aurora-lime: #A3E635;
+    }
+
+    /* Transitions ciblées : aucun changement de structure */
+    .hero,
+    .glass-card,
+    .stat-card,
+    .result-card,
+    .poster-card,
+    .empty-state,
+    section[data-testid="stSidebar"] button,
+    button[kind="primary"],
+    button[kind="secondary"],
+    input,
+    textarea,
+    .stSelectbox div[data-baseweb="select"] > div,
+    div[data-testid="stPlotlyChart"] {
+        transition:
+            transform 240ms ease,
+            box-shadow 240ms ease,
+            border-color 240ms ease,
+            background-color 240ms ease,
+            filter 240ms ease;
+    }
+
+    /* Hero : halo et lumière douce */
+    .hero {
+        position: relative;
+        overflow: hidden;
+        box-shadow:
+            0 14px 45px rgba(0, 0, 0, 0.20),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .hero::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -130%;
+        width: 65%;
+        height: 100%;
+        pointer-events: none;
+        background: linear-gradient(
+            105deg,
+            transparent,
+            rgba(255, 255, 255, 0.08),
+            transparent
+        );
+        transform: skewX(-20deg);
+        animation: heroLightSweep 9s ease-in-out infinite;
+    }
+
+    @keyframes heroLightSweep {
+        0%, 64% { left: -130%; }
+        84%, 100% { left: 145%; }
+    }
+
+    /* Stats : élévation et reflet */
+    .stat-card {
+        position: relative;
+        overflow: hidden;
+        box-shadow:
+            0 8px 24px rgba(0, 0, 0, 0.16),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .stat-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+            circle at 50% -20%,
+            rgba(255, 255, 255, 0.14),
+            transparent 58%
+        );
+    }
+
+    .stat-card:hover {
+        transform: translateY(-6px);
+        box-shadow:
+            0 18px 38px rgba(0, 0, 0, 0.30),
+            0 0 24px rgba(124, 58, 237, 0.18);
+    }
+
+    .stat-card .value {
+        position: relative;
+        animation: valueGlow 3.2s ease-in-out infinite;
+    }
+
+    @keyframes valueGlow {
+        0%, 100% { text-shadow: 0 0 0 transparent; }
+        50% { text-shadow: 0 0 18px rgba(34, 211, 238, 0.22); }
+    }
+
+    /* Result cards : mouvement horizontal discret */
+    .result-card {
+        position: relative;
+        box-shadow:
+            0 6px 18px rgba(0, 0, 0, 0.13),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .result-card:hover {
+        transform: translateX(5px);
+        border-color: rgba(124, 58, 237, 0.50);
+        box-shadow:
+            0 12px 28px rgba(0, 0, 0, 0.26),
+            0 0 18px rgba(124, 58, 237, 0.16);
+    }
+
+    /* Posters : zoom, glow et balayage lumineux */
+    .poster-card {
+        box-shadow:
+            0 8px 20px rgba(0, 0, 0, 0.30),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .poster-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        background: linear-gradient(
+            120deg,
+            transparent 20%,
+            rgba(255, 255, 255, 0.20) 48%,
+            transparent 75%
+        );
+        transform: translateX(-130%);
+        transition: transform 650ms ease;
+    }
+
+    .poster-card:hover {
+        transform: translateY(-9px) scale(1.035);
+        border-color: rgba(34, 211, 238, 0.58);
+        box-shadow:
+            0 20px 38px rgba(0, 0, 0, 0.44),
+            0 0 22px rgba(34, 211, 238, 0.22);
+    }
+
+    .poster-card:hover::after { transform: translateX(130%); }
+
+    .poster-img {
+        transition: transform 500ms ease, filter 500ms ease;
+    }
+
+    .poster-card:hover .poster-img {
+        transform: scale(1.08);
+        filter: brightness(1.08) saturate(1.12);
+    }
+
+    /* Boutons principaux : lift et shine */
+    button[kind="primary"] {
+        position: relative;
+        overflow: hidden;
+        box-shadow:
+            0 5px 16px rgba(124, 58, 237, 0.28),
+            inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+
+    button[kind="primary"]::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -130%;
+        width: 65%;
+        height: 100%;
+        pointer-events: none;
+        background: linear-gradient(
+            105deg,
+            transparent,
+            rgba(255, 255, 255, 0.26),
+            transparent
+        );
+        transform: skewX(-20deg);
+    }
+
+    button[kind="primary"]:hover {
+        transform: translateY(-3px);
+        box-shadow:
+            0 10px 26px rgba(124, 58, 237, 0.44),
+            0 0 18px rgba(168, 85, 247, 0.24);
+    }
+
+    button[kind="primary"]:hover::before {
+        animation: buttonShine 700ms ease;
+    }
+
+    @keyframes buttonShine {
+        from { left: -130%; }
+        to { left: 145%; }
+    }
+
+    /* Sidebar : léger déplacement au survol */
+    section[data-testid="stSidebar"] button:hover {
+        transform: translateX(4px);
+    }
+
+    section[data-testid="stSidebar"] button[kind="primary"] {
+        box-shadow:
+            0 0 20px rgba(124, 58, 237, 0.34),
+            inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    /* Inputs et selectbox : focus plus lisible */
+    input:focus,
+    textarea:focus,
+    .stSelectbox div[data-baseweb="select"] > div:focus-within {
+        border-color: rgba(168, 85, 247, 0.82) !important;
+        box-shadow:
+            0 0 0 3px rgba(124, 58, 237, 0.16),
+            0 0 18px rgba(124, 58, 237, 0.17);
+    }
+
+    /* Empty state */
+    .empty-state:hover {
+        transform: translateY(-3px);
+        border-color: rgba(168, 85, 247, 0.70);
+        background: rgba(124, 58, 237, 0.08);
+    }
+
+    .empty-state .icon {
+        animation: emptyIconFloat 2.8s ease-in-out infinite;
+    }
+
+    @keyframes emptyIconFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    /* Progress bars : flux du gradient */
+    .stProgress > div > div {
+        background-size: 200% 100% !important;
+        animation: progressFlow 3s linear infinite;
+    }
+
+    @keyframes progressFlow {
+        from { background-position: 0% 0%; }
+        to { background-position: 200% 0%; }
+    }
+
+    /* Graphiques Plotly : effet sur le conteneur Streamlit */
+    div[data-testid="stPlotlyChart"] {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.025);
+        box-shadow:
+            0 8px 26px rgba(0, 0, 0, 0.17),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        animation: chartAppear 650ms ease-out both;
+    }
+
+    div[data-testid="stPlotlyChart"]:hover {
+        transform: translateY(-3px);
+        border-color: rgba(34, 211, 238, 0.38);
+        box-shadow:
+            0 16px 36px rgba(0, 0, 0, 0.30),
+            0 0 24px rgba(34, 211, 238, 0.14),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    div[data-testid="stPlotlyChart"]::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -125%;
+        width: 55%;
+        height: 100%;
+        z-index: 5;
+        pointer-events: none;
+        background: linear-gradient(
+            105deg,
+            transparent,
+            rgba(255, 255, 255, 0.06),
+            transparent
+        );
+        transform: skewX(-20deg);
+        animation: chartLightSweep 10s ease-in-out infinite;
+    }
+
+    div[data-testid="stPlotlyChart"]::after {
+        content: "";
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        bottom: 0;
+        height: 2px;
+        z-index: 5;
+        pointer-events: none;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            #7C3AED,
+            #22D3EE,
+            #F59E0B,
+            transparent
+        );
+        background-size: 200% 100%;
+        opacity: 0.75;
+        animation: chartAccentFlow 5s linear infinite;
+    }
+
+    @keyframes chartAppear {
+        from {
+            opacity: 0;
+            transform: translateY(16px) scale(0.985);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes chartLightSweep {
+        0%, 65% { left: -125%; }
+        85%, 100% { left: 145%; }
+    }
+
+    @keyframes chartAccentFlow {
+        from { background-position: 0% 50%; }
+        to { background-position: 200% 50%; }
+    }
+
+    div[data-testid="stPlotlyChart"] .modebar {
+        opacity: 0;
+        transition: opacity 220ms ease;
+    }
+
+    div[data-testid="stPlotlyChart"]:hover .modebar { opacity: 0.85; }
+
+    /* Responsive : réduire les transformations sur petits écrans */
+    @media (max-width: 768px) {
+        .hero { padding: 1.8rem 1.25rem; }
+        .hero h1 { font-size: 2rem; }
+        .poster-card:hover { transform: translateY(-6px) scale(1.015); }
+        .result-card:hover { transform: translateY(-2px); }
+    }
+
+    /* Accessibilité */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+
     </style>
 
     <div class="aurora-bande"></div>
