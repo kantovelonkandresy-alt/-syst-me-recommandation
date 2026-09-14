@@ -1,6 +1,6 @@
 # app.py
 # Application Web (Streamlit) du système de recommandation utilisateur-item.
-# Version qui fonctionne - Thème sombre "cinéma" avec effets néon.
+# Thème "Netflix" (noir & rouge).
 # Lancer avec : streamlit run app.py
 
 import streamlit as st
@@ -16,12 +16,12 @@ st.set_page_config(
 )
 
 # ============================================================
-#  STYLE PERSONNALISÉ (CSS) — thème sombre néon
+#  STYLE PERSONNALISÉ (CSS) — thème Netflix (noir & rouge)
 # ============================================================
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;500;600;700;800&display=swap');
 
     html, body, [class*="css"] {
         font-family: 'Poppins', sans-serif;
@@ -31,133 +31,111 @@ st.markdown(
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes glow {
-        0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.35); }
-        50% { box-shadow: 0 0 34px rgba(236, 72, 153, 0.45); }
-    }
-    @keyframes gradientMove {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+    @keyframes pulseRed {
+        0%, 100% { box-shadow: 0 0 16px rgba(229, 9, 20, 0.4); }
+        50% { box-shadow: 0 0 28px rgba(229, 9, 20, 0.65); }
     }
 
-    /* Fond général sombre */
+    /* Fond général - noir profond façon Netflix */
     .stApp {
-        background: radial-gradient(circle at 20% 0%, #1A1030 0%, #0B0714 45%, #05040A 100%);
+        background: linear-gradient(180deg, #141414 0%, #0A0A0A 100%);
     }
     [data-testid="stAppViewContainer"] * , [data-testid="stMarkdownContainer"] p {
-        color: #EDEBF5;
+        color: #E5E5E5;
     }
 
-    /* Bannière d'en-tête néon */
+    /* Bannière d'en-tête */
     .hero {
-        background: linear-gradient(120deg, #A855F7, #EC4899, #22D3EE, #A855F7);
-        background-size: 300% 300%;
-        animation: gradientMove 8s ease infinite, fadeIn 0.6s ease-out;
-        padding: 2.8rem 2.4rem;
-        border-radius: 22px;
+        background: linear-gradient(120deg, #8B0000 0%, #E50914 55%, #B81D24 100%);
+        padding: 2.6rem 2.4rem;
+        border-radius: 10px;
         margin-bottom: 1.8rem;
-        box-shadow: 0 0 50px rgba(168, 85, 247, 0.35);
+        box-shadow: 0 10px 40px rgba(229, 9, 20, 0.35);
+        animation: fadeIn 0.6s ease-out;
+        border-left: 6px solid #E50914;
     }
     .hero h1 {
+        font-family: 'Bebas Neue', sans-serif;
         color: white;
-        font-size: 2.6rem;
-        font-weight: 800;
+        font-size: 3rem;
+        letter-spacing: 0.03em;
         margin: 0;
-        letter-spacing: -0.02em;
-        text-shadow: 0 0 24px rgba(255,255,255,0.5);
+        text-shadow: 0 0 20px rgba(0,0,0,0.4);
     }
     .hero p {
-        color: rgba(255,255,255,0.95);
-        font-size: 1.05rem;
-        margin-top: 0.6rem;
+        color: rgba(255,255,255,0.92);
+        font-size: 1.02rem;
+        margin-top: 0.5rem;
         font-weight: 500;
-    }
-
-    /* Cartes en verre (glassmorphism) */
-    .glass-card {
-        background: rgba(255,255,255,0.045);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255,255,255,0.09);
-        border-radius: 18px;
     }
 
     /* Cartes de statistiques */
     .stat-card {
-        background: rgba(255,255,255,0.045);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255,255,255,0.09);
-        border-radius: 18px;
-        padding: 1.3rem 1.4rem;
+        background: #181818;
+        border-radius: 8px;
+        padding: 1.2rem 1.4rem;
         text-align: center;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        border: 1px solid #2A2A2A;
+        border-top: 3px solid #E50914;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
         animation: fadeIn 0.7s ease-out;
     }
     .stat-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(168, 85, 247, 0.5);
-        box-shadow: 0 0 24px rgba(168, 85, 247, 0.25);
+        transform: translateY(-4px) scale(1.02);
+        box-shadow: 0 10px 24px rgba(229, 9, 20, 0.25);
     }
     .stat-card .value {
-        font-size: 2.1rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #C084FC, #F472B6, #22D3EE);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 2.3rem;
+        color: #E50914;
+        letter-spacing: 0.02em;
     }
     .stat-card .label {
-        font-size: 0.8rem;
-        color: #9B93B5;
+        font-size: 0.78rem;
+        color: #999;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         font-weight: 600;
     }
 
-    /* Cartes de résultats (utilisateurs / films) */
+    /* Cartes de résultats (utilisateurs / films) — effet "carte film" */
     .result-card {
-        background: rgba(255,255,255,0.045);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255,255,255,0.09);
-        border-left: 4px solid #A855F7;
-        border-radius: 14px;
+        background: #181818;
+        border-radius: 8px;
         padding: 1rem 1.4rem;
         margin-bottom: 0.65rem;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        border: 1px solid #2A2A2A;
+        border-left: 4px solid #E50914;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         animation: fadeIn 0.4s ease-out;
     }
     .result-card:hover {
-        transform: translateX(5px);
-        border-left-color: #EC4899;
-        box-shadow: 0 0 22px rgba(168, 85, 247, 0.2);
-    }
-    .result-card.film {
-        border-left-color: #EC4899;
-    }
-    .result-card.film:hover {
-        border-left-color: #22D3EE;
-        box-shadow: 0 0 22px rgba(34, 211, 238, 0.2);
+        transform: scale(1.015);
+        background: #222222;
+        box-shadow: 0 8px 24px rgba(229, 9, 20, 0.25);
     }
     .result-card h4 {
         margin: 0 0 0.35rem 0;
-        color: #F5F3FF;
+        color: #F5F5F5;
         font-size: 1.08rem;
         font-weight: 600;
     }
     .genre-badge {
         display: inline-block;
-        background: rgba(236, 72, 153, 0.15);
-        color: #F472B6;
-        border: 1px solid rgba(236, 72, 153, 0.3);
+        background: rgba(229, 9, 20, 0.15);
+        color: #FF3B47;
+        border: 1px solid rgba(229, 9, 20, 0.35);
         font-size: 0.72rem;
-        font-weight: 600;
+        font-weight: 700;
         padding: 0.18rem 0.65rem;
-        border-radius: 999px;
+        border-radius: 4px;
         margin-left: 0.5rem;
         vertical-align: middle;
+        text-transform: uppercase;
     }
     .score-text {
         font-size: 0.8rem;
-        color: #9B93B5;
+        color: #999;
         margin-top: 0.35rem;
     }
 
@@ -167,14 +145,13 @@ st.markdown(
         justify-content: center;
         width: 34px;
         height: 34px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #A855F7, #EC4899);
+        border-radius: 4px;
+        background: linear-gradient(135deg, #E50914, #8B0000);
         color: white;
         font-weight: 700;
         font-size: 0.85rem;
         margin-right: 0.6rem;
         vertical-align: middle;
-        box-shadow: 0 0 14px rgba(168, 85, 247, 0.5);
     }
 
     .rang-badge {
@@ -186,28 +163,27 @@ st.markdown(
     .empty-state {
         text-align: center;
         padding: 2.6rem 1rem;
-        color: #9B93B5;
-        background: rgba(255,255,255,0.03);
-        border-radius: 18px;
-        border: 1.5px dashed rgba(168, 85, 247, 0.3);
+        color: #999;
+        background: #181818;
+        border-radius: 8px;
+        border: 1.5px dashed #E50914;
     }
     .empty-state .icon {
         font-size: 2.3rem;
         margin-bottom: 0.6rem;
         display: block;
-        filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.6));
     }
 
     /* Barre latérale */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0F0A1E 0%, #05040A 100%);
-        border-right: 1px solid rgba(168, 85, 247, 0.15);
+        background: #0A0A0A;
+        border-right: 1px solid #2A2A2A;
     }
     section[data-testid="stSidebar"] * {
-        color: #EDEBF5 !important;
+        color: #E5E5E5 !important;
     }
     section[data-testid="stSidebar"] button {
-        border-radius: 12px !important;
+        border-radius: 6px !important;
         text-align: left !important;
         justify-content: flex-start !important;
         font-weight: 500 !important;
@@ -215,46 +191,49 @@ st.markdown(
         margin-bottom: 0.3rem !important;
     }
     section[data-testid="stSidebar"] button[kind="secondary"] {
-        background: rgba(255,255,255,0.04) !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
+        background: #181818 !important;
+        border: 1px solid #2A2A2A !important;
     }
     section[data-testid="stSidebar"] button[kind="secondary"]:hover {
-        background: rgba(168, 85, 247, 0.15) !important;
-        border-color: rgba(168, 85, 247, 0.4) !important;
+        background: #222222 !important;
+        border-color: #E50914 !important;
     }
     section[data-testid="stSidebar"] button[kind="primary"] {
-        background: linear-gradient(135deg, #A855F7, #EC4899) !important;
+        background: #E50914 !important;
         border: none !important;
-        animation: glow 2.5s ease-in-out infinite;
+        animation: pulseRed 2.5s ease-in-out infinite;
     }
 
     /* Boutons principaux (zone centrale) */
     button[kind="primary"] {
-        background: linear-gradient(135deg, #A855F7, #EC4899) !important;
+        background: #E50914 !important;
         border: none !important;
-        box-shadow: 0 0 20px rgba(168, 85, 247, 0.4) !important;
-        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-        font-weight: 600 !important;
+        border-radius: 4px !important;
+        box-shadow: 0 4px 14px rgba(229, 9, 20, 0.4) !important;
+        transition: transform 0.15s ease, background 0.15s ease !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
     button[kind="primary"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0 30px rgba(236, 72, 153, 0.55) !important;
+        background: #F6121D !important;
+        transform: scale(1.03);
     }
 
-    /* Barres de progression néon */
+    /* Barres de progression rouges */
     .stProgress > div > div {
-        background: linear-gradient(90deg, #A855F7, #EC4899, #22D3EE) !important;
+        background: linear-gradient(90deg, #8B0000, #E50914) !important;
     }
     .stProgress > div {
-        background: rgba(255,255,255,0.08) !important;
+        background: #2A2A2A !important;
     }
 
     /* Champs de saisie */
     input, textarea, .stSelectbox div[data-baseweb="select"] > div {
-        background: rgba(255,255,255,0.05) !important;
-        border: 1px solid rgba(255,255,255,0.12) !important;
-        color: #EDEBF5 !important;
-        border-radius: 10px !important;
+        background: #181818 !important;
+        border: 1px solid #333 !important;
+        color: #E5E5E5 !important;
+        border-radius: 4px !important;
     }
 
     #MainMenu, footer {visibility: hidden;}
@@ -280,7 +259,7 @@ systeme = SystemeRecommandation(donnees, genres)
 st.markdown(
     """
     <div class="hero">
-        <h1>🎬 CinéReco</h1>
+        <h1>🎬 CINÉRECO</h1>
         <p>Système de recommandation basé sur un graphe utilisateur-item —
         similarité de Jaccard + bonus de genre</p>
     </div>
@@ -320,16 +299,12 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(
     f"""
     <div style="text-align:center;">
-        <div style="font-size:1.7rem; font-weight:800;
-                    background: linear-gradient(135deg, #C084FC, #F472B6);
-                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        <div style="font-family:'Bebas Neue',sans-serif; font-size:1.9rem; color:#E50914;">
             {len(donnees)}
         </div>
         <div style="font-size:0.75rem; opacity:0.6;">UTILISATEURS</div>
         <br>
-        <div style="font-size:1.7rem; font-weight:800;
-                    background: linear-gradient(135deg, #C084FC, #F472B6);
-                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        <div style="font-family:'Bebas Neue',sans-serif; font-size:1.9rem; color:#E50914;">
             {len(genres)}
         </div>
         <div style="font-size:0.75rem; opacity:0.6;">FILMS</div>
@@ -370,14 +345,14 @@ st.write("")
 if page == "graphe":
     st.subheader("Visualisation interactive du graphe utilisateur-item")
     st.write(
-        "🟣 Les noeuds **violets** représentent les utilisateurs · "
-        "🩷 Les noeuds **roses** représentent les films. "
+        "🔴 Les noeuds **rouges** représentent les utilisateurs · "
+        "⚫ Les noeuds **gris foncé** représentent les films. "
         "Survolez un noeud avec la souris pour voir ses détails — "
         "vous pouvez aussi zoomer et déplacer le graphe."
     )
     st.markdown(
-        '<div style="background:#F7F5FC; border-radius:18px; padding:1rem; '
-        'border:1px solid rgba(255,255,255,0.09);">',
+        '<div style="background:#181818; border-radius:10px; padding:1rem; '
+        'border:1px solid #2A2A2A;">',
         unsafe_allow_html=True,
     )
     graphe = creer_graphe()
@@ -444,7 +419,7 @@ elif page == "recommandations":
                 genre = genres.get(film, "Genre inconnu")
                 st.markdown(
                     f"""
-                    <div class="result-card film">
+                    <div class="result-card">
                         <h4><span class="rang-badge">{rang}</span>🎬 {film}
                         <span class="genre-badge">{genre}</span></h4>
                         <div class="score-text">Score de pertinence : {score}</div>
@@ -486,7 +461,11 @@ elif page == "liste":
 elif page == "ajouter":
     st.subheader("Ajouter un nouvel utilisateur")
 
-    st.markdown('<div class="glass-card" style="padding:1.5rem;">', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="background:#181818; border-radius:10px; padding:1.5rem; '
+        'border:1px solid #2A2A2A;">',
+        unsafe_allow_html=True,
+    )
     nom = st.text_input("Nom du nouvel utilisateur")
     films_texte = st.text_input(
         "Films aimés (séparés par une virgule)",
@@ -511,8 +490,8 @@ elif page == "ajouter":
 
 st.markdown(
     """
-    <div style="text-align:center; margin-top:2.5rem; padding:1rem; color:#6B6480; font-size:0.8rem;">
-        🎬 CinéReco — Projet L2 · Python / NetworkX / Streamlit
+    <div style="text-align:center; margin-top:2.5rem; padding:1rem; color:#666; font-size:0.8rem;">
+        🎬 CINÉRECO — Projet L2 · Python / NetworkX / Streamlit
     </div>
     """,
     unsafe_allow_html=True,
