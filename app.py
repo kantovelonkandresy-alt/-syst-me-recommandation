@@ -40,35 +40,26 @@ def couleurs_poster(nom_film: str):
     return debut, fin, icone
 
 
-@st.cache_data(show_spinner=False)
+POSTERS_REELS = {
+    "john wick": "https://image.tmdb.org/t/p/w500/fZPSd91yGE9fCcCe6OoQr6E3Bev.jpg",
+    "spider-man": "https://image.tmdb.org/t/p/w500/gh4cZbhZxyTbgxQPxD0dOudNPTn.jpg",
+    "spiderman": "https://image.tmdb.org/t/p/w500/gh4cZbhZxyTbgxQPxD0dOudNPTn.jpg",
+    "la la land": "https://image.tmdb.org/t/p/w500/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg",
+    "titanic": "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg",
+    "avatar": "https://image.tmdb.org/t/p/w500/kyeqWdyUXW608qlYkRqosgbbJyK.jpg",
+    "avengers": "https://image.tmdb.org/t/p/w500/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
+    "the dark knight": "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+    "inception": "https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
+    "interstellar": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    "the matrix": "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+    "joker": "https://image.tmdb.org/t/p/w500/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg",
+}
+
+
 def obtenir_url_poster(nom_film: str):
-    """Maka poster OMDb raha misy API key; raha tsy misy dia fallback gradient."""
-    try:
-        cle_api = st.secrets.get("OMDB_API_KEY", "")
-    except Exception:
-        # Tsy misy secrets.toml: ampiasaina ho azy ny poster gradient.
-        cle_api = ""
-
-    if not cle_api:
-        return None
-
-    try:
-        reponse = requests.get(
-            "https://www.omdbapi.com/",
-            params={"t": nom_film, "apikey": cle_api},
-            timeout=5,
-        )
-        reponse.raise_for_status()
-        donnees_api = reponse.json()
-        url = donnees_api.get("Poster")
-        if url and url != "N/A":
-            return url
-    except Exception:
-        # Raha tsy mandeha OMDb na tsy hita ilay film,
-        # dia hiverina amin'ny poster gradient ao amin'ny poster_html().
-        pass
-
-    return None
+    """Mamerina URL poster tena izy ho an'ireo titres fantatra; tsy mila API key."""
+    titre = " ".join(nom_film.strip().lower().split())
+    return POSTERS_REELS.get(titre)
 
 
 def poster_html(nom_film: str, genre: str = "", badge: str = "") -> str:
@@ -685,6 +676,77 @@ st.markdown(
         .poster-card,
         div[data-testid="stPlotlyChart"] {
             transition: none !important;
+        }
+    }
+
+
+
+    /* ============================================================
+       HEADER CINEMA LOGO — CSS only, sans image externe
+       ============================================================ */
+
+    .hero h1 {
+        display: flex;
+        align-items: center;
+        gap: .9rem;
+    }
+
+    .hero h1::before {
+        content: "🎬";
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 58px;
+        height: 58px;
+        border: 1px solid rgba(255,255,255,.28);
+        border-radius: 18px;
+        background: linear-gradient(135deg, #8b5cf6, #ec4899 52%, #38bdf8);
+        box-shadow:
+            0 10px 28px rgba(139,92,246,.40),
+            0 0 26px rgba(56,189,248,.18),
+            inset 0 1px 0 rgba(255,255,255,.32);
+        font-size: 1.85rem;
+        line-height: 1;
+        animation: logoFloat 3.2s ease-in-out infinite;
+    }
+
+    .hero h1::after {
+        content: "✦";
+        position: absolute;
+        top: 22px;
+        left: 60px;
+        color: #fbbf24;
+        font-size: .9rem;
+        text-shadow: 0 0 12px rgba(251,191,36,.8);
+        animation: logoSparkle 2s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-5px) rotate(-3deg); }
+    }
+
+    @keyframes logoSparkle {
+        0%, 100% { opacity: .25; transform: scale(.75) rotate(0deg); }
+        50% { opacity: 1; transform: scale(1.15) rotate(18deg); }
+    }
+
+    @media (max-width: 768px) {
+        .hero h1 { gap: .65rem; }
+        .hero h1::before {
+            width: 45px;
+            height: 45px;
+            border-radius: 14px;
+            font-size: 1.4rem;
+        }
+        .hero h1::after { left: 47px; top: 17px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .hero h1::before,
+        .hero h1::after {
+            animation: none !important;
         }
     }
 
