@@ -4,6 +4,8 @@
 # animées (violet, cyan, ambre, lime) + glassmorphism moderne.
 # Lancer avec : streamlit run app.py
 
+import hashlib
+import requests
 import streamlit as st
 import plotly.graph_objects as go
 from donnees import obtenir_donnees, obtenir_genres, ajouter_utilisateur
@@ -16,6 +18,74 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# ============================================================
+#  POSTERS (réels via OMDb, avec repli sur poster généré)
+# ============================================================
+GRADIENTS_POSTER = [
+    ("#7C3AED", "#22D3EE"),
+    ("#F59E0B", "#A3E635"),
+    ("#EC4899", "#7C3AED"),
+    ("#22D3EE", "#A3E635"),
+    ("#7C3AED", "#F59E0B"),
+    ("#A3E635", "#22D3EE"),
+]
+ICONES_POSTER = ["🎬", "🎞️", "🍿", "🎭", "📽️", "⭐"]
+
+
+def couleurs_poster(nom_film: str):
+    h = int(hashlib.md5(nom_film.encode()).hexdigest(), 16)
+    debut, fin = GRADIENTS_POSTER[h % len(GRADIENTS_POSTER)]
+    icone = ICONES_POSTER[h % len(ICONES_POSTER)]
+    return debut, fin, icone
+
+
+@st.cache_data(show_spinner=False)
+def obtenir_url_poster(nom_film: str):
+    cle_api = st.secrets.get("OMDB_API_KEY", "")
+    if not cle_api:
+        return None
+    try:
+        reponse = requests.get(
+            "https://www.omdbapi.com/",
+            params={"t": nom_film, "apikey": cle_api},
+            timeout=5,
+        )
+        donnees_api = reponse.json()
+        url = donnees_api.get("Poster")
+        if url and url != "N/A":
+            return url
+    except Exception:
+        pass
+    return None
+
+
+def poster_html(nom_film: str, genre: str = "", badge: str = "") -> str:
+    badge_html = f'<div class="poster-badge">{badge}</div>' if badge else ""
+    url_reelle = obtenir_url_poster(nom_film)
+
+    if url_reelle:
+        return (
+            f'<div class="poster-card">'
+            f'{badge_html}'
+            f'<img src="{url_reelle}" class="poster-img" alt="{nom_film}">'
+            f'<div class="poster-overlay">'
+            f'<div class="poster-title">{nom_film}</div>'
+            f'<div class="poster-genre">{genre}</div>'
+            f'</div>'
+            f'</div>'
+        )
+
+    debut, fin, icone = couleurs_poster(nom_film)
+    return (
+        f'<div class="poster-card" style="background: linear-gradient(160deg, {debut}, {fin});">'
+        f'{badge_html}'
+        f'<div class="poster-icon">{icone}</div>'
+        f'<div class="poster-title">{nom_film}</div>'
+        f'<div class="poster-genre">{genre}</div>'
+        f'</div>'
+    )
+
 
 # ============================================================
 #  STYLE PERSONNALISÉ (CSS) — thème Aurora
@@ -150,6 +220,64 @@ st.markdown(
         border: 1.5px dashed rgba(124, 58, 237, 0.35);
     }
     .empty-state .icon { font-size: 2.2rem; margin-bottom: 0.6rem; display: block; }
+
+    /* Posters de films */
+    .poster-row {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 0.4rem 0.2rem 1rem;
+    }
+    .poster-row::-webkit-scrollbar { height: 6px; }
+    .poster-row::-webkit-scrollbar-thumb {
+        background: linear-gradient(90deg, #7C3AED, #22D3EE);
+        border-radius: 4px;
+    }
+    .poster-card {
+        position: relative;
+        flex: 0 0 150px;
+        height: 210px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+    .poster-card:hover { transform: translateY(-5px); }
+    .poster-img {
+        position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%; object-fit: cover;
+    }
+    .poster-overlay {
+        position: relative; z-index: 2;
+        background: linear-gradient(180deg, transparent 0%, rgba(5,7,13,0.92) 100%);
+        margin: -0.9rem;
+        padding: 2.2rem 0.9rem 0.7rem;
+    }
+    .poster-icon {
+        position: absolute; top: 0.7rem; left: 0.8rem;
+        font-size: 1.5rem; z-index: 2;
+    }
+    .poster-badge {
+        position: absolute; top: 0.6rem; right: 0.6rem;
+        background: rgba(5,7,13,0.7);
+        border: 1px solid rgba(163, 230, 53, 0.5);
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+        font-size: 0.72rem; font-weight: 700;
+        color: #A3E635; z-index: 2;
+    }
+    .poster-title {
+        font-size: 0.9rem; font-weight: 700; color: white;
+        line-height: 1.25; position: relative; z-index: 2;
+    }
+    .poster-genre {
+        font-size: 0.7rem; color: rgba(255,255,255,0.8);
+        margin-top: 0.2rem; position: relative; z-index: 2;
+    }
 
     /* Sidebar */
     section[data-testid="stSidebar"] {
@@ -351,6 +479,13 @@ elif page == "similaires":
                     unsafe_allow_html=True,
                 )
                 st.progress(min(score, 1.0))
+
+            st.write("")
+            st.write(f"**Films aimés par {utilisateur} :**")
+            posters = "".join(
+                poster_html(f, genres.get(f, "")) for f in donnees[utilisateur]
+            )
+            st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
         else:
             st.warning(f"Aucun utilisateur similaire trouvé pour {utilisateur}.")
     else:
@@ -378,6 +513,13 @@ elif page == "recommandations":
         recommandations = systeme.generer_recommandations(utilisateur)
         if recommandations:
             st.write(f"**Films recommandés pour {utilisateur} :**")
+            posters = "".join(
+                poster_html(film, genres.get(film, ""), badge=f"{score}")
+                for film, score in recommandations
+            )
+            st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
+
+            st.write("")
             score_max = max(s for _, s in recommandations) or 1
             for i, (film, score) in enumerate(recommandations):
                 rang = RANGS[i] if i < 3 else ""
