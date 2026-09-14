@@ -1,11 +1,11 @@
 # app.py
-# Application Web (Streamlit) du système de recommandation utilisateur-item.
-# Thème "Cinéma Doré" (navy + or) — posters générés + disposition en rangées.
+# CinéReco - Application Web (Streamlit) du système de recommandation
+# utilisateur-item. Thème "Aurora" : fond sombre avec bandes de lumière
+# animées (violet, cyan, ambre, lime) + glassmorphism moderne.
 # Lancer avec : streamlit run app.py
 
-import hashlib
-import requests
 import streamlit as st
+import plotly.graph_objects as go
 from donnees import obtenir_donnees, obtenir_genres, ajouter_utilisateur
 from graphe import creer_graphe, obtenir_figure_plotly
 from recommandation import SystemeRecommandation
@@ -18,401 +18,203 @@ st.set_page_config(
 )
 
 # ============================================================
-#  PALETTE DE GRADIENTS POUR LES POSTERS GÉNÉRÉS
-#  (aucune image réelle n'est utilisée : chaque film reçoit un
-#  "poster" stylisé généré à partir de son nom, pour éviter tout
-#  problème de droits d'auteur sur les affiches officielles)
-# ============================================================
-GRADIENTS_POSTER = [
-    ("#1B2A4A", "#3A5A8C"),
-    ("#2E1F47", "#6C3FA6"),
-    ("#0F3D3E", "#1F8A70"),
-    ("#4A3B1F", "#D4AF37"),
-    ("#1F2937", "#4B5563"),
-    ("#142B3D", "#2C7DA0"),
-]
-ICONES_POSTER = ["🎬", "🎞️", "🍿", "🎭", "📽️", "⭐"]
-
-
-def couleurs_poster(nom_film: str):
-    """Choisit un dégradé et une icône de façon stable pour un film donné."""
-    h = int(hashlib.md5(nom_film.encode()).hexdigest(), 16)
-    debut, fin = GRADIENTS_POSTER[h % len(GRADIENTS_POSTER)]
-    icone = ICONES_POSTER[h % len(ICONES_POSTER)]
-    return debut, fin, icone
-
-
-@st.cache_data(show_spinner=False)
-def obtenir_url_poster(nom_film: str):
-    """
-    Cherche l'affiche officielle du film via l'API gratuite OMDb.
-    Retourne None si aucune clé API n'est configurée dans les secrets,
-    si le film n'est pas trouvé, ou en cas d'erreur réseau — dans ce cas
-    l'application affichera automatiquement le poster généré à la place.
-    """
-    cle_api = st.secrets.get("OMDB_API_KEY", "")
-    if not cle_api:
-        return None
-    try:
-        reponse = requests.get(
-            "https://www.omdbapi.com/",
-            params={"t": nom_film, "apikey": cle_api},
-            timeout=5,
-        )
-        donnees_api = reponse.json()
-        url = donnees_api.get("Poster")
-        if url and url != "N/A":
-            return url
-    except Exception:
-        pass
-    return None
-
-
-def poster_html(nom_film: str, genre: str = "", badge: str = "") -> str:
-    """
-    Construit le HTML d'un poster. Si une affiche réelle est disponible
-    (via OMDb), elle est utilisée ; sinon un poster stylisé généré à
-    partir du nom du film est affiché à la place.
-    Tout est écrit sur une seule ligne, sans espace de début, pour éviter
-    que Streamlit/Markdown interprète le contenu comme un bloc de code.
-    """
-    badge_html = f'<div class="poster-badge">{badge}</div>' if badge else ""
-    url_reelle = obtenir_url_poster(nom_film)
-
-    if url_reelle:
-        return (
-            f'<div class="poster-card">'
-            f'{badge_html}'
-            f'<img src="{url_reelle}" class="poster-img" alt="{nom_film}">'
-            f'<div class="poster-overlay">'
-            f'<div class="poster-title">{nom_film}</div>'
-            f'<div class="poster-genre">{genre}</div>'
-            f'</div>'
-            f'</div>'
-        )
-
-    debut, fin, icone = couleurs_poster(nom_film)
-    return (
-        f'<div class="poster-card" style="background: linear-gradient(160deg, {debut}, {fin});">'
-        f'{badge_html}'
-        f'<div class="poster-icon">{icone}</div>'
-        f'<div class="poster-title">{nom_film}</div>'
-        f'<div class="poster-genre">{genre}</div>'
-        f'</div>'
-    )
-
-
-# ============================================================
-#  STYLE PERSONNALISÉ (CSS) — thème "Cinéma Doré"
+#  STYLE PERSONNALISÉ (CSS) — thème Aurora
 # ============================================================
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+
+    @keyframes auroraFlow {
+        0%   { transform: translate(-10%, -5%) rotate(0deg) scale(1); }
+        33%  { transform: translate(8%, 6%) rotate(8deg) scale(1.15); }
+        66%  { transform: translate(-6%, 8%) rotate(-6deg) scale(1.05); }
+        100% { transform: translate(-10%, -5%) rotate(0deg) scale(1); }
     }
-
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes floatIcon {
-        0%, 100% { transform: translateY(0) rotate(-2deg); }
-        50% { transform: translateY(-8px) rotate(2deg); }
-    }
-    @keyframes glowGold {
-        0%, 100% { box-shadow: 0 0 16px rgba(212, 175, 55, 0.35); }
-        50% { box-shadow: 0 0 26px rgba(212, 175, 55, 0.55); }
-    }
 
-    /* Fond général */
+    /* Fond nuit + bandes d'aurore animées */
     .stApp {
-        background: radial-gradient(circle at 15% 0%, #10182B 0%, #0A0E17 45%, #050608 100%);
+        background: #05070d;
+        position: relative;
+        overflow-x: hidden;
     }
-    [data-testid="stAppViewContainer"] * , [data-testid="stMarkdownContainer"] p {
-        color: #EDE6D6;
+    .aurora-bande {
+        position: fixed;
+        width: 140vw;
+        height: 140vh;
+        top: -20vh;
+        left: -20vw;
+        z-index: 0;
+        pointer-events: none;
+        filter: blur(80px);
+        opacity: 0.55;
+        background:
+            radial-gradient(ellipse 30% 18% at 25% 30%, #7C3AED 0%, transparent 70%),
+            radial-gradient(ellipse 25% 15% at 70% 25%, #22D3EE 0%, transparent 70%),
+            radial-gradient(ellipse 28% 16% at 55% 60%, #F59E0B 0%, transparent 70%),
+            radial-gradient(ellipse 24% 14% at 30% 70%, #A3E635 0%, transparent 70%);
+        animation: auroraFlow 26s ease-in-out infinite;
+    }
+    [data-testid="stAppViewContainer"], section[data-testid="stSidebar"] {
+        position: relative;
+        z-index: 1;
+    }
+    [data-testid="stAppViewContainer"] *, [data-testid="stMarkdownContainer"] p {
+        color: #E7E9F0;
     }
 
-    /* Bannière d'en-tête */
+    /* En-tête */
     .hero {
-        background: linear-gradient(120deg, #1B2A4A 0%, #12151F 60%, #0A0E17 100%);
-        padding: 2.4rem 2.4rem 1.8rem;
-        border-radius: 16px;
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-top: 3px solid #7C3AED;
+        padding: 2.6rem 2.4rem;
+        border-radius: 20px;
         margin-bottom: 1.8rem;
-        border: 1px solid rgba(212, 175, 55, 0.25);
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         animation: fadeIn 0.6s ease-out;
     }
-    .hero-icon {
-        display: inline-block;
-        animation: floatIcon 2.4s ease-in-out infinite;
-    }
     .hero h1 {
-        font-family: 'Playfair Display', serif;
-        background: linear-gradient(90deg, #D4AF37, #F2C14E, #D4AF37);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 2.7rem;
-        font-weight: 800;
-        margin: 0;
-        letter-spacing: 0.01em;
+        font-family: 'Space Grotesk', sans-serif;
+        color: #FAFAFF; font-size: 2.5rem; font-weight: 700; margin: 0;
     }
-    .hero p {
-        color: #B8B0A0;
-        font-size: 1.02rem;
-        margin-top: 0.5rem;
-        font-weight: 400;
-    }
-    .hero-stats {
-        display: flex;
-        gap: 0.8rem;
-        margin-top: 1.3rem;
-        flex-wrap: wrap;
-    }
-    .hero-pill {
-        background: rgba(212, 175, 55, 0.08);
-        border: 1px solid rgba(212, 175, 55, 0.3);
-        border-radius: 999px;
-        padding: 0.5rem 1.1rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #F2C14E;
+    .hero p { color: #A6ABBD; font-size: 1.02rem; margin-top: 0.6rem; }
+
+    /* Cartes en verre */
+    .glass-card {
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 18px;
     }
 
-    /* Posters générés */
-    .poster-row {
-        display: flex;
-        gap: 1rem;
-        overflow-x: auto;
-        padding: 0.4rem 0.2rem 1rem;
-    }
-    .poster-row::-webkit-scrollbar {
-        height: 6px;
-    }
-    .poster-row::-webkit-scrollbar-thumb {
-        background: rgba(212, 175, 55, 0.4);
-        border-radius: 4px;
-    }
-    .poster-card {
-        position: relative;
-        flex: 0 0 150px;
-        height: 210px;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.08);
-        padding: 0.9rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        overflow: hidden;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        animation: fadeIn 0.4s ease-out;
-    }
-    .poster-card:hover {
-        transform: translateY(-6px) scale(1.03);
-        box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
-    }
-    .poster-img {
-        position: absolute;
-        top: 0; left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .poster-overlay {
-        position: relative;
-        z-index: 2;
-        background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.85) 100%);
-        margin: -0.9rem;
-        padding: 2.2rem 0.9rem 0.7rem;
-    }
-    .poster-icon {
-        position: absolute;
-        top: 0.7rem;
-        left: 0.8rem;
-        font-size: 1.6rem;
-        opacity: 0.85;
-    }
-    .poster-badge {
-        position: absolute;
-        top: 0.6rem;
-        right: 0.6rem;
-        background: rgba(0,0,0,0.55);
-        border: 1px solid rgba(212, 175, 55, 0.5);
-        border-radius: 999px;
-        padding: 0.15rem 0.55rem;
-        font-size: 0.72rem;
-        font-weight: 700;
-        color: #F2C14E;
-    }
-    .poster-title {
-        font-size: 0.92rem;
-        font-weight: 700;
-        color: white;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        line-height: 1.25;
-    }
-    .poster-genre {
-        font-size: 0.7rem;
-        color: rgba(255,255,255,0.75);
-        margin-top: 0.2rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    /* Cartes de résultats (utilisateurs similaires) */
-    .result-card {
-        background: #12151F;
-        border-radius: 12px;
-        padding: 1rem 1.4rem;
-        margin-bottom: 0.6rem;
-        border: 1px solid rgba(255,255,255,0.07);
-        border-left: 4px solid #D4AF37;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-        animation: fadeIn 0.4s ease-out;
-    }
-    .result-card:hover {
-        transform: translateX(5px);
-        box-shadow: 0 8px 20px rgba(212, 175, 55, 0.15);
-    }
-    .result-card h4 {
-        margin: 0 0 0.35rem 0;
-        color: #F5F0E6;
-        font-size: 1.05rem;
-        font-weight: 600;
-    }
-    .score-text {
-        font-size: 0.8rem;
-        color: #9A9484;
-        margin-top: 0.3rem;
-    }
-    .avatar {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #D4AF37, #8C6D1F);
-        color: #0A0E17;
-        font-weight: 800;
-        font-size: 0.8rem;
-        margin-right: 0.6rem;
-        vertical-align: middle;
-    }
-    .rang-badge {
-        font-size: 1.1rem;
-        margin-right: 0.4rem;
-        vertical-align: middle;
-    }
-
-    /* Cartes de statistiques (page graphe) */
+    /* Cartes de statistiques — chacune son accent Aurora */
     .stat-card {
-        background: #12151F;
-        border-radius: 14px;
-        padding: 1.1rem 1.3rem;
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 18px;
+        padding: 1.3rem 1.4rem;
         text-align: center;
-        border: 1px solid rgba(255,255,255,0.07);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        animation: fadeIn 0.7s ease-out;
     }
-    .stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 24px rgba(212, 175, 55, 0.15);
+    .stat-card.violet { border-top: 3px solid #7C3AED; }
+    .stat-card.cyan   { border-top: 3px solid #22D3EE; }
+    .stat-card.ambre  { border-top: 3px solid #F59E0B; }
+    .stat-card .value { font-size: 2.1rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: #FAFAFF; }
+    .stat-card .label { font-size: 0.78rem; color: #8890A3; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+
+    /* Cartes de résultats */
+    .result-card {
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-left: 3px solid #7C3AED;
+        border-radius: 14px;
+        padding: 1rem 1.4rem;
+        margin-bottom: 0.65rem;
+        animation: fadeIn 0.4s ease-out;
     }
-    .stat-card .value {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.9rem;
-        font-weight: 800;
-        color: #D4AF37;
+    .result-card.film { border-left-color: #22D3EE; }
+    .result-card h4 { margin: 0 0 0.35rem 0; color: #FAFAFF; font-size: 1.05rem; font-weight: 600; }
+    .genre-badge {
+        display: inline-block;
+        background: rgba(163, 230, 53, 0.12);
+        color: #A3E635;
+        border: 1px solid rgba(163, 230, 53, 0.35);
+        font-size: 0.72rem; font-weight: 600;
+        padding: 0.18rem 0.65rem; border-radius: 999px;
+        margin-left: 0.5rem; vertical-align: middle;
     }
-    .stat-card .label {
-        font-size: 0.75rem;
-        color: #9A9484;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
+    .score-text { font-size: 0.8rem; color: #8890A3; margin-top: 0.35rem; }
+
+    .avatar {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px; border-radius: 50%;
+        background: #7C3AED; color: white; font-weight: 700; font-size: 0.8rem;
+        margin-right: 0.6rem; vertical-align: middle;
     }
+    .rang-badge { font-size: 1.1rem; margin-right: 0.4rem; vertical-align: middle; }
 
     .empty-state {
-        text-align: center;
-        padding: 2.4rem 1rem;
-        color: #9A9484;
-        background: #12151F;
-        border-radius: 14px;
-        border: 1.5px dashed rgba(212, 175, 55, 0.3);
+        text-align: center; padding: 2.6rem 1rem; color: #8890A3;
+        background: rgba(255,255,255,0.03); border-radius: 18px;
+        border: 1.5px dashed rgba(124, 58, 237, 0.35);
     }
-    .empty-state .icon {
-        font-size: 2.2rem;
-        margin-bottom: 0.5rem;
-        display: block;
-    }
+    .empty-state .icon { font-size: 2.2rem; margin-bottom: 0.6rem; display: block; }
 
-    /* Barre latérale */
+    /* Sidebar */
     section[data-testid="stSidebar"] {
-        background: #070A11;
-        border-right: 1px solid rgba(212, 175, 55, 0.15);
+        background: rgba(8, 10, 18, 0.9);
+        border-right: 1px solid rgba(255,255,255,0.08);
     }
-    section[data-testid="stSidebar"] * {
-        color: #EDE6D6 !important;
+    section[data-testid="stSidebar"] * { color: #E7E9F0 !important; }
+    .sidebar-logo {
+        display: flex; align-items: center; gap: 0.6rem;
+        padding: 0.4rem 0 1.2rem 0; margin-bottom: 0.8rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo .emoji { font-size: 1.7rem; }
+    .sidebar-logo .texte {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 1.1rem; color: #FAFAFF;
     }
     section[data-testid="stSidebar"] button {
-        border-radius: 10px !important;
-        text-align: left !important;
-        justify-content: flex-start !important;
-        font-weight: 500 !important;
-        transition: all 0.15s ease !important;
+        border-radius: 10px !important; text-align: left !important;
+        justify-content: flex-start !important; font-weight: 500 !important;
         margin-bottom: 0.3rem !important;
     }
     section[data-testid="stSidebar"] button[kind="secondary"] {
-        background: rgba(255,255,255,0.03) !important;
-        border: 1px solid rgba(255,255,255,0.07) !important;
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
     }
     section[data-testid="stSidebar"] button[kind="secondary"]:hover {
-        background: rgba(212, 175, 55, 0.1) !important;
-        border-color: rgba(212, 175, 55, 0.35) !important;
-        transform: translateX(4px);
+        background: rgba(124, 58, 237, 0.18) !important;
+        border-color: rgba(124, 58, 237, 0.5) !important;
     }
     section[data-testid="stSidebar"] button[kind="primary"] {
-        background: linear-gradient(135deg, #8C6D1F, #D4AF37) !important;
-        color: #0A0E17 !important;
-        border: none !important;
-        animation: glowGold 2.6s ease-in-out infinite;
+        background: #7C3AED !important; border: none !important;
     }
 
-    /* Boutons principaux */
     button[kind="primary"] {
-        background: linear-gradient(135deg, #8C6D1F, #D4AF37) !important;
-        color: #0A0E17 !important;
-        border: none !important;
-        box-shadow: 0 4px 16px rgba(212, 175, 55, 0.35) !important;
-        font-weight: 700 !important;
-        transition: transform 0.15s ease !important;
+        background: #7C3AED !important; border: none !important;
+        font-weight: 600 !important;
+        transition: transform 0.15s ease, background 0.15s ease !important;
     }
     button[kind="primary"]:hover {
-        transform: translateY(-2px);
-    }
-    button[kind="primary"]:active {
-        transform: scale(0.96) !important;
+        background: #6D28D9 !important;
+        transform: translateY(-1px);
     }
 
-    /* Barres de progression dorées */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #8C6D1F, #D4AF37, #F2C14E) !important;
-    }
-    .stProgress > div {
-        background: rgba(255,255,255,0.08) !important;
-    }
+    .stProgress > div > div { background: linear-gradient(90deg, #7C3AED, #22D3EE) !important; }
+    .stProgress > div { background: rgba(255,255,255,0.08) !important; }
 
-    /* Champs de saisie */
     input, textarea, .stSelectbox div[data-baseweb="select"] > div {
-        background: #12151F !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        color: #EDE6D6 !important;
-        border-radius: 8px !important;
+        background: rgba(255,255,255,0.05) !important;
+        border: 1px solid rgba(255,255,255,0.14) !important;
+        color: #E7E9F0 !important; border-radius: 10px !important;
     }
+    .stSelectbox div[data-baseweb="select"] * { color: #E7E9F0 !important; }
+    ul[role="listbox"] { background: #0d0f1a !important; }
+    ul[role="listbox"] li { background: #0d0f1a !important; color: #E7E9F0 !important; }
+    ul[role="listbox"] li:hover { background: rgba(124, 58, 237, 0.25) !important; }
+
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: #05070d; }
+    ::-webkit-scrollbar-thumb { background: #7C3AED; border-radius: 10px; }
 
     #MainMenu, footer {visibility: hidden;}
     </style>
+
+    <div class="aurora-bande"></div>
     """,
     unsafe_allow_html=True,
 )
@@ -429,20 +231,14 @@ donnees, genres = charger_systeme()
 systeme = SystemeRecommandation(donnees, genres)
 
 # ============================================================
-#  BANNIÈRE D'EN-TÊTE (statistiques intégrées)
+#  BANNIÈRE D'EN-TÊTE
 # ============================================================
-total_connexions = sum(len(f) for f in donnees.values())
 st.markdown(
-    f"""
+    """
     <div class="hero">
-        <h1><span class="hero-icon">🎬</span> CinéReco</h1>
+        <h1>🎬 CinéReco</h1>
         <p>Système de recommandation basé sur un graphe utilisateur-item —
         similarité de Jaccard + bonus de genre</p>
-        <div class="hero-stats">
-            <div class="hero-pill">👥 {len(donnees)} utilisateurs</div>
-            <div class="hero-pill">🎞️ {len(genres)} films</div>
-            <div class="hero-pill">🔗 {total_connexions} connexions</div>
-        </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -458,17 +254,25 @@ PAGES = [
     ("graphe", "🕸️  Graphe utilisateur-item"),
     ("similaires", "🤝  Utilisateurs similaires"),
     ("recommandations", "✨  Recommandations"),
+    ("statistiques", "📊  Statistiques"),
     ("liste", "👥  Liste des utilisateurs"),
     ("ajouter", "➕  Ajouter un utilisateur"),
 ]
 
+st.sidebar.markdown(
+    """
+    <div class="sidebar-logo">
+        <span class="emoji">🎬</span>
+        <span class="texte">CinéReco</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 st.sidebar.markdown("### 📌 Navigation")
 for cle, libelle in PAGES:
     est_active = st.session_state.page == cle
     if st.sidebar.button(
-        libelle,
-        key=f"nav_{cle}",
-        use_container_width=True,
+        libelle, key=f"nav_{cle}", use_container_width=True,
         type="primary" if est_active else "secondary",
     ):
         st.session_state.page = cle
@@ -477,22 +281,47 @@ for cle, libelle in PAGES:
 page = st.session_state.page
 
 # ============================================================
+#  STATISTIQUES RAPIDES (bandeau)
+# ============================================================
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown(
+        f'<div class="stat-card violet"><div class="value">{len(donnees)}</div>'
+        f'<div class="label">Utilisateurs</div></div>', unsafe_allow_html=True,
+    )
+with col2:
+    st.markdown(
+        f'<div class="stat-card cyan"><div class="value">{len(genres)}</div>'
+        f'<div class="label">Films</div></div>', unsafe_allow_html=True,
+    )
+with col3:
+    total_connexions = sum(len(f) for f in donnees.values())
+    st.markdown(
+        f'<div class="stat-card ambre"><div class="value">{total_connexions}</div>'
+        f'<div class="label">Connexions</div></div>', unsafe_allow_html=True,
+    )
+
+st.write("")
+
+# ============================================================
 #  PAGE : GRAPHE
 # ============================================================
 if page == "graphe":
     st.subheader("Visualisation interactive du graphe utilisateur-item")
+    utilisateur_focus = st.selectbox(
+        "Mettre en évidence un utilisateur (optionnel) :",
+        ["Aucun"] + list(donnees.keys()),
+    )
     st.write(
-        "🟡 Les noeuds **dorés** représentent les utilisateurs · "
-        "🔵 Les noeuds **bleus** représentent les films. "
-        "Survolez un noeud pour voir ses détails — zoomez et déplacez le graphe."
+        "🟣 Les noeuds **violets** représentent les utilisateurs · "
+        "🔵 Les noeuds **cyan** représentent les films. "
+        "Survolez un noeud avec la souris pour voir ses détails — "
+        "vous pouvez aussi zoomer et déplacer le graphe."
     )
-    st.markdown(
-        '<div style="background:#12151F; border-radius:14px; padding:1rem; '
-        'border:1px solid rgba(255,255,255,0.07);">',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
     graphe = creer_graphe()
-    fig = obtenir_figure_plotly(graphe)
+    cible = None if utilisateur_focus == "Aucun" else utilisateur_focus
+    fig = obtenir_figure_plotly(graphe, utilisateur_selectionne=cible)
     st.plotly_chart(fig, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -514,7 +343,7 @@ elif page == "similaires":
                 initiales = nom[:2].upper()
                 st.markdown(
                     f"""
-                    <div class="result-card" style="animation-delay:{i * 0.08}s;">
+                    <div class="result-card">
                         <h4><span class="rang-badge">{rang}</span><span class="avatar">{initiales}</span>{nom}</h4>
                         <div class="score-text">Similarité : {score * 100:.1f}%</div>
                     </div>
@@ -522,14 +351,6 @@ elif page == "similaires":
                     unsafe_allow_html=True,
                 )
                 st.progress(min(score, 1.0))
-
-            # Aperçu des films de l'utilisateur sélectionné, en rangée de posters
-            st.write("")
-            st.write(f"**Films aimés par {utilisateur} :**")
-            posters = "".join(
-                poster_html(f, genres.get(f, "")) for f in donnees[utilisateur]
-            )
-            st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
         else:
             st.warning(f"Aucun utilisateur similaire trouvé pour {utilisateur}.")
     else:
@@ -551,24 +372,27 @@ elif page == "recommandations":
     st.subheader("Obtenir des recommandations personnalisées")
     utilisateur = st.selectbox("Choisissez un utilisateur :", list(donnees.keys()))
 
+    RANGS = ["🥇", "🥈", "🥉"]
+
     if st.button("✨ Générer les recommandations", type="primary"):
         recommandations = systeme.generer_recommandations(utilisateur)
         if recommandations:
             st.write(f"**Films recommandés pour {utilisateur} :**")
             score_max = max(s for _, s in recommandations) or 1
-            posters = "".join(
-                poster_html(
-                    film,
-                    genres.get(film, ""),
-                    badge=f"{score:.2f}",
+            for i, (film, score) in enumerate(recommandations):
+                rang = RANGS[i] if i < 3 else ""
+                genre = genres.get(film, "Genre inconnu")
+                st.markdown(
+                    f"""
+                    <div class="result-card film">
+                        <h4><span class="rang-badge">{rang}</span>🎬 {film}
+                        <span class="genre-badge">{genre}</span></h4>
+                        <div class="score-text">Score de pertinence : {score}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
-                for film, score in recommandations
-            )
-            st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
-
-            st.write("")
-            for film, score in recommandations:
-                st.progress(min(score / score_max, 1.0), text=film)
+                st.progress(min(score / score_max, 1.0))
         else:
             st.warning(f"Aucune recommandation disponible pour {utilisateur}.")
     else:
@@ -584,14 +408,98 @@ elif page == "recommandations":
         )
 
 # ============================================================
-#  PAGE : LISTE DES UTILISATEURS (grille de posters par utilisateur)
+#  PAGE : STATISTIQUES
+# ============================================================
+elif page == "statistiques":
+    st.subheader("Statistiques du système")
+
+    compte_genres = {}
+    for g in genres.values():
+        compte_genres[g] = compte_genres.get(g, 0) + 1
+
+    compte_films = {}
+    for films in donnees.values():
+        for film in films:
+            compte_films[film] = compte_films.get(film, 0) + 1
+    films_tries = sorted(compte_films.items(), key=lambda x: x[1], reverse=True)
+
+    col_gauche, col_droite = st.columns(2)
+
+    with col_gauche:
+        st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+        st.markdown("**Répartition des genres**")
+        fig_genres = go.Figure(
+            data=[go.Pie(
+                labels=list(compte_genres.keys()),
+                values=list(compte_genres.values()),
+                hole=0.55,
+                marker=dict(colors=["#7C3AED", "#22D3EE", "#F59E0B", "#A3E635", "#EC4899", "#818CF8"]),
+                textfont=dict(color="white"),
+            )]
+        )
+        fig_genres.update_layout(
+            showlegend=True,
+            legend=dict(font=dict(color="#E7E9F0")),
+            paper_bgcolor="rgba(0,0,0,0)",
+            margin=dict(t=10, b=10, l=10, r=10),
+            height=340,
+        )
+        st.plotly_chart(fig_genres, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_droite:
+        st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+        st.markdown("**Films les plus populaires**")
+        fig_films = go.Figure(
+            data=[go.Bar(
+                x=[c for _, c in films_tries],
+                y=[f for f, _ in films_tries],
+                orientation="h",
+                marker=dict(color="#22D3EE"),
+            )]
+        )
+        fig_films.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#E7E9F0"),
+            xaxis=dict(showgrid=False),
+            yaxis=dict(autorange="reversed"),
+            margin=dict(t=10, b=10, l=10, r=10),
+            height=340,
+        )
+        st.plotly_chart(fig_films, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# ============================================================
+#  PAGE : LISTE DES UTILISATEURS
 # ============================================================
 elif page == "liste":
     st.subheader("Tous les utilisateurs et leurs films")
-    for nom, films in donnees.items():
-        st.markdown(f"#### 👤 {nom}  ·  {len(films)} film(s)")
-        posters = "".join(poster_html(f, genres.get(f, "")) for f in films)
-        st.markdown(f'<div class="poster-row">{posters}</div>', unsafe_allow_html=True)
+    recherche = st.text_input("🔎 Rechercher un utilisateur", placeholder="Ex : Kanto")
+
+    utilisateurs_filtres = {
+        nom: films for nom, films in donnees.items()
+        if recherche.strip().lower() in nom.lower()
+    }
+
+    if not utilisateurs_filtres:
+        st.markdown(
+            """
+            <div class="empty-state">
+                <span class="icon">🔎</span>
+                Aucun utilisateur ne correspond à cette recherche.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        cols = st.columns(2)
+        for i, (nom, films) in enumerate(utilisateurs_filtres.items()):
+            with cols[i % 2]:
+                with st.expander(f"👤 {nom}  ·  {len(films)} film(s)"):
+                    for film in films:
+                        genre = genres.get(film, "Genre inconnu")
+                        st.markdown(f"🎬 **{film}** — *{genre}*")
 
 # ============================================================
 #  PAGE : AJOUTER UN UTILISATEUR
@@ -599,11 +507,7 @@ elif page == "liste":
 elif page == "ajouter":
     st.subheader("Ajouter un nouvel utilisateur")
 
-    st.markdown(
-        '<div style="background:#12151F; border-radius:14px; padding:1.5rem; '
-        'border:1px solid rgba(255,255,255,0.07);">',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<div class="glass-card" style="padding:1.5rem;">', unsafe_allow_html=True)
     nom = st.text_input("Nom du nouvel utilisateur")
     films_texte = st.text_input(
         "Films aimés (séparés par une virgule)",
@@ -621,14 +525,14 @@ elif page == "ajouter":
                 st.error("❌ Vous devez indiquer au moins un film.")
             else:
                 ajouter_utilisateur(nom.strip(), liste_films)
-                st.success(f"✅ Utilisateur '{nom}' ajouté avec succès.")
                 st.cache_data.clear()
+                st.toast(f"Utilisateur '{nom}' ajouté avec succès !", icon="✅")
                 st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown(
     """
-    <div style="text-align:center; margin-top:2.5rem; padding:1rem; color:#6B6455; font-size:0.8rem;">
+    <div style="text-align:center; margin-top:2.5rem; padding:1rem; color:#5B6172; font-size:0.8rem;">
         🎬 CinéReco — Projet L2 · Python / NetworkX / Streamlit
     </div>
     """,
