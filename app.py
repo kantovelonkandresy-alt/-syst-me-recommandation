@@ -42,17 +42,19 @@ def couleurs_poster(nom_film: str):
 
 
 def poster_html(nom_film: str, genre: str = "", badge: str = "") -> str:
-    """Construit le HTML d'un poster stylisé (généré, pas une vraie affiche)."""
+    """Construit le HTML d'un poster stylisé (généré, pas une vraie affiche).
+    Tout est écrit sur une seule ligne, sans espace de début, pour éviter
+    que Streamlit/Markdown interprète le contenu comme un bloc de code."""
     debut, fin, icone = couleurs_poster(nom_film)
     badge_html = f'<div class="poster-badge">{badge}</div>' if badge else ""
-    return f"""
-    <div class="poster-card" style="background: linear-gradient(160deg, {debut}, {fin});">
-        {badge_html}
-        <div class="poster-icon">{icone}</div>
-        <div class="poster-title">{nom_film}</div>
-        <div class="poster-genre">{genre}</div>
-    </div>
-    """
+    return (
+        f'<div class="poster-card" style="background: linear-gradient(160deg, {debut}, {fin});">'
+        f'{badge_html}'
+        f'<div class="poster-icon">{icone}</div>'
+        f'<div class="poster-title">{nom_film}</div>'
+        f'<div class="poster-genre">{genre}</div>'
+        f'</div>'
+    )
 
 
 # ============================================================
