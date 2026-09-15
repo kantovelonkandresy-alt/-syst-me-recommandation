@@ -107,12 +107,39 @@ st.markdown(
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes scintiller {
+        0%, 100% { opacity: 0.15; }
+        50% { opacity: 0.9; }
+    }
+    @keyframes lueurTexte {
+        0%, 100% { text-shadow: 0 0 12px rgba(124, 58, 237, 0.35); }
+        50% { text-shadow: 0 0 22px rgba(34, 211, 238, 0.45); }
+    }
 
-    /* Fond nuit + bandes d'aurore animées */
+    /* Fond nuit + bandes d'aurore animées + étoiles scintillantes */
     .stApp {
         background: #05070d;
         position: relative;
         overflow-x: hidden;
+    }
+    .stApp::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+            radial-gradient(1.5px 1.5px at 10% 15%, #fff, transparent),
+            radial-gradient(1px 1px at 25% 45%, #fff, transparent),
+            radial-gradient(1.5px 1.5px at 40% 10%, #fff, transparent),
+            radial-gradient(1px 1px at 60% 55%, #fff, transparent),
+            radial-gradient(1.5px 1.5px at 75% 20%, #fff, transparent),
+            radial-gradient(1px 1px at 85% 70%, #fff, transparent),
+            radial-gradient(1.5px 1.5px at 15% 80%, #fff, transparent),
+            radial-gradient(1px 1px at 50% 85%, #fff, transparent),
+            radial-gradient(1.5px 1.5px at 95% 40%, #fff, transparent);
+        background-repeat: no-repeat;
+        animation: scintiller 4s ease-in-out infinite;
     }
     .aurora-bande {
         position: fixed;
@@ -154,6 +181,8 @@ st.markdown(
     .hero h1 {
         font-family: 'Space Grotesk', sans-serif;
         color: #FAFAFF; font-size: 2.5rem; font-weight: 700; margin: 0;
+        animation: lueurTexte 3.5s ease-in-out infinite;
+        display: inline-block;
     }
     .hero p { color: #A6ABBD; font-size: 1.02rem; margin-top: 0.6rem; }
 
@@ -175,6 +204,11 @@ st.markdown(
         padding: 1.3rem 1.4rem;
         text-align: center;
         animation: fadeIn 0.7s ease-out;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 28px rgba(124, 58, 237, 0.25);
     }
     .stat-card.violet { border-top: 3px solid #7C3AED; }
     .stat-card.cyan   { border-top: 3px solid #22D3EE; }
@@ -192,8 +226,15 @@ st.markdown(
         padding: 1rem 1.4rem;
         margin-bottom: 0.65rem;
         animation: fadeIn 0.4s ease-out;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .result-card:hover {
+        transform: translateX(6px);
+        border-left-color: #22D3EE;
+        box-shadow: 0 8px 20px rgba(34, 211, 238, 0.18);
     }
     .result-card.film { border-left-color: #22D3EE; }
+    .result-card.film:hover { border-left-color: #A3E635; box-shadow: 0 8px 20px rgba(163, 230, 53, 0.2); }
     .result-card h4 { margin: 0 0 0.35rem 0; color: #FAFAFF; font-size: 1.05rem; font-weight: 600; }
     .genre-badge {
         display: inline-block;
@@ -244,9 +285,13 @@ st.markdown(
         flex-direction: column;
         justify-content: flex-end;
         overflow: hidden;
-        transition: transform 0.2s ease;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     }
-    .poster-card:hover { transform: translateY(-5px); }
+    .poster-card:hover {
+        transform: translateY(-8px) scale(1.04) rotate(-1deg);
+        box-shadow: 0 16px 32px rgba(124, 58, 237, 0.35);
+        border-color: rgba(34, 211, 238, 0.5);
+    }
     .poster-img {
         position: absolute; top: 0; left: 0;
         width: 100%; height: 100%; object-fit: cover;
@@ -436,43 +481,86 @@ st.write("")
 # ============================================================
 if page == "graphe":
     st.subheader("Visualisation interactive du graphe utilisateur-item")
-    utilisateur_focus = st.selectbox(
-        "Mettre en évidence un utilisateur (optionnel) :",
-        ["Aucun"] + list(donnees.keys()),
-    )
-    st.write(
-        "🟣 Les noeuds **violets** représentent les utilisateurs · "
-        "🔵 Les noeuds **cyan** représentent les films. "
-        "Survolez un noeud avec la souris pour voir ses détails — "
-        "vous pouvez aussi zoomer et déplacer le graphe."
-    )
-    st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+
+    col_graphe, col_info = st.columns([2.2, 1])
+
     graphe = creer_graphe()
-    cible = None if utilisateur_focus == "Aucun" else utilisateur_focus
-    fig = obtenir_figure_plotly(graphe, utilisateur_selectionne=cible)
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_info:
+        st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+        st.markdown("**🔎 Explorer**")
+        utilisateur_focus = st.selectbox(
+            "Mettre en évidence un utilisateur :",
+            ["Aucun"] + list(donnees.keys()),
+        )
+        st.write(
+            "🟣 **Violet** = utilisateurs\n\n"
+            "🔵 **Cyan** = films\n\n"
+            "La taille d'un noeud dépend de son nombre de connexions."
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        degres = dict(graphe.degree())
+        noeud_populaire = max(degres, key=degres.get)
+        st.markdown(
+            f"""
+            <div class="stat-card violet" style="margin-top:0.8rem;">
+                <div class="value" style="font-size:1.3rem;">{noeud_populaire}</div>
+                <div class="label">Noeud le plus connecté ({degres[noeud_populaire]})</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_graphe:
+        st.markdown('<div class="glass-card" style="padding:1rem;">', unsafe_allow_html=True)
+        cible = None if utilisateur_focus == "Aucun" else utilisateur_focus
+        fig = obtenir_figure_plotly(graphe, utilisateur_selectionne=cible)
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ============================================================
 #  PAGE : UTILISATEURS SIMILAIRES
 # ============================================================
 elif page == "similaires":
     st.subheader("Trouver les utilisateurs similaires")
-    utilisateur = st.selectbox("Choisissez un utilisateur :", list(donnees.keys()))
+
+    col_form, col_profil = st.columns([1.4, 1])
+
+    with col_form:
+        st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+        utilisateur = st.selectbox("Choisissez un utilisateur :", list(donnees.keys()))
+        rechercher = st.button("🔍 Rechercher", type="primary")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_profil:
+        initiales = utilisateur[:2].upper()
+        st.markdown(
+            f"""
+            <div class="glass-card" style="padding:1.2rem; text-align:center;">
+                <span class="avatar" style="width:48px; height:48px; font-size:1.1rem;">{initiales}</span>
+                <div style="margin-top:0.6rem; font-weight:700; color:#FAFAFF;">{utilisateur}</div>
+                <div style="font-size:0.8rem; color:#8890A3;">{len(donnees[utilisateur])} film(s) aimé(s)</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.write("")
 
     RANGS = ["🥇", "🥈", "🥉"]
 
-    if st.button("🔍 Rechercher", type="primary"):
+    if rechercher:
         similaires = systeme.trouver_utilisateurs_similaires(utilisateur)
         if similaires:
             st.write(f"**Résultats pour {utilisateur} :**")
             for i, (nom, score) in enumerate(similaires):
                 rang = RANGS[i] if i < 3 else ""
-                initiales = nom[:2].upper()
+                initiales_nom = nom[:2].upper()
                 st.markdown(
                     f"""
                     <div class="result-card">
-                        <h4><span class="rang-badge">{rang}</span><span class="avatar">{initiales}</span>{nom}</h4>
+                        <h4><span class="rang-badge">{rang}</span><span class="avatar">{initiales_nom}</span>{nom}</h4>
                         <div class="score-text">Similarité : {score * 100:.1f}%</div>
                     </div>
                     """,
@@ -505,11 +593,34 @@ elif page == "similaires":
 # ============================================================
 elif page == "recommandations":
     st.subheader("Obtenir des recommandations personnalisées")
-    utilisateur = st.selectbox("Choisissez un utilisateur :", list(donnees.keys()))
+
+    col_form, col_profil = st.columns([1.4, 1])
+
+    with col_form:
+        st.markdown('<div class="glass-card" style="padding:1.2rem;">', unsafe_allow_html=True)
+        utilisateur = st.selectbox("Choisissez un utilisateur :", list(donnees.keys()))
+        generer = st.button("✨ Générer les recommandations", type="primary")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col_profil:
+        initiales = utilisateur[:2].upper()
+        genres_aimes = sorted({genres.get(f, "") for f in donnees[utilisateur]} - {""})
+        st.markdown(
+            f"""
+            <div class="glass-card" style="padding:1.2rem; text-align:center;">
+                <span class="avatar" style="width:48px; height:48px; font-size:1.1rem;">{initiales}</span>
+                <div style="margin-top:0.6rem; font-weight:700; color:#FAFAFF;">{utilisateur}</div>
+                <div style="font-size:0.78rem; color:#8890A3;">{', '.join(genres_aimes) if genres_aimes else 'Genres variés'}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.write("")
 
     RANGS = ["🥇", "🥈", "🥉"]
 
-    if st.button("✨ Générer les recommandations", type="primary"):
+    if generer:
         recommandations = systeme.generer_recommandations(utilisateur)
         if recommandations:
             st.write(f"**Films recommandés pour {utilisateur} :**")
